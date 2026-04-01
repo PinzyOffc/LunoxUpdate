@@ -2688,6 +2688,7 @@ const { ext } = await fromBuffer(medianya) || options.ext
  │.public
  │.afk
  │.unafk
+ │.update
  │.clearsesi
  │.restart
  │.hapus-sampah
