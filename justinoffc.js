@@ -3547,48 +3547,36 @@ try {
     await reaction(m.chat, "⏳");
     await m.reply("🔍 Mengecek update terbaru...");
 
-    // URL Version GitHub
-    const versionUrl = "https://raw.githubusercontent.com/PinzyOffc/LunoxUpdate/main/version.json";
+    const axios = require("axios");
+    const fs = require("fs");
 
-    // URL Script Update
-    const scriptUrl = "https://raw.githubusercontent.com/PinzyOffc/LunoxUpdate/main/justinoffc.js";
+    // URL RAW GitHub
+    const url = "https://raw.githubusercontent.com/PinzyOffc/LunoxUpdate/main/justinoffc.js";
 
-    const localVersionFile = "./Lunox-Prime/lib/Version/version.json";
-    const scriptPath = "./justinoffc.js";
+    // File lokal
+    const filePath = "./justinoffc.js";
 
-    // Ambil version dari GitHub
-    const gitRes = await axios.get(versionUrl);
-    const gitVersion = gitRes.data.version;
+    // Ambil file dari GitHub
+    const res = await axios.get(url);
+    const githubCode = res.data;
 
-    // Ambil version lokal
-    let localVersion = "0.0.0";
+    // Ambil file lokal
+    let localCode = "";
 
-    if (fs.existsSync(localVersionFile)) {
-        const localData = JSON.parse(fs.readFileSync(localVersionFile));
-        localVersion = localData.version;
+    if (fs.existsSync(filePath)) {
+        localCode = fs.readFileSync(filePath, "utf8");
     }
 
-    // Bandingkan version
-    if (gitVersion === localVersion) {
+    // Bandingkan isi
+    if (githubCode === localCode) {
 
         await reaction(m.chat, "✅");
-        return m.reply(`✔️ Script sudah versi terbaru\nVersion: ${localVersion}`);
+        return m.reply("✔️ Script sudah versi terbaru.");
 
     }
 
-    // Kalau ada update
-    await m.reply(`⬆️ Update ditemukan!\n${localVersion} ➜ ${gitVersion}`);
-
-    const scriptRes = await axios.get(scriptUrl);
-    const newCode = scriptRes.data;
-
-    // Simpan script baru
-    fs.writeFileSync(scriptPath, newCode);
-
-    // Update version lokal
-    fs.writeFileSync(localVersionFile, JSON.stringify({
-        version: gitVersion
-    }, null, 2));
+    // Kalau beda → update
+    fs.writeFileSync(filePath, githubCode);
 
     await reaction(m.chat, "✅");
     await m.reply("✅ Update berhasil!\n🔁 Restart bot...");
@@ -3605,6 +3593,7 @@ try {
     await m.reply("❌ Gagal mengecek update.");
 
 }
+
 break;
 
 case "afk": {
