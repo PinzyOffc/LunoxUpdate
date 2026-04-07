@@ -3538,36 +3538,72 @@ await client.sendMessage(config.owner, {
 }
 break
 
+const fs = require('fs');
+const axios = require('axios');
+
 case 'update':
 try {
+
     await reaction(m.chat, "⏳");
-    await m.reply('🔄 Mengecek apakah ada update , jika ada update otomatis');
+    await m.reply("🔍 Mengecek update terbaru...");
 
-    const url = 'https://raw.githubusercontent.com/PinzyOffc/LunoxUpdate/main/justinoffc.js';
-    const filePath = './justinoffc.js';
+    // URL Version GitHub
+    const versionUrl = "https://raw.githubusercontent.com/PinzyOffc/LunoxUpdate/main/version.json";
 
-    // TANPA TOKEN
-    const response = await axios.get(url);
+    // URL Script Update
+    const scriptUrl = "https://raw.githubusercontent.com/PinzyOffc/LunoxUpdate/main/justinoffc.js";
 
-    const newCode = response.data;
+    const localVersionFile = "./Lunox-Prime/lib/Version/version.json";
+    const scriptPath = "./justinoffc.js";
 
-    if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
+    // Ambil version dari GitHub
+    const gitRes = await axios.get(versionUrl);
+    const gitVersion = gitRes.data.version;
+
+    // Ambil version lokal
+    let localVersion = "0.0.0";
+
+    if (fs.existsSync(localVersionFile)) {
+        const localData = JSON.parse(fs.readFileSync(localVersionFile));
+        localVersion = localData.version;
     }
 
-    fs.writeFileSync(filePath, newCode);
+    // Bandingkan version
+    if (gitVersion === localVersion) {
+
+        await reaction(m.chat, "✅");
+        return m.reply(`✔️ Script sudah versi terbaru\nVersion: ${localVersion}`);
+
+    }
+
+    // Kalau ada update
+    await m.reply(`⬆️ Update ditemukan!\n${localVersion} ➜ ${gitVersion}`);
+
+    const scriptRes = await axios.get(scriptUrl);
+    const newCode = scriptRes.data;
+
+    // Simpan script baru
+    fs.writeFileSync(scriptPath, newCode);
+
+    // Update version lokal
+    fs.writeFileSync(localVersionFile, JSON.stringify({
+        version: gitVersion
+    }, null, 2));
 
     await reaction(m.chat, "✅");
-    await m.reply('Selesai Update\n🔁 Bot menjalankan restart ringan.');
+    await m.reply("✅ Update berhasil!\n🔁 Restart bot...");
 
     setTimeout(() => {
         process.exit(0);
-    }, 1000);
+    }, 1500);
 
 } catch (err) {
+
     console.error(err);
-    await m.reply('❌ Gagal update, Chat Owner Lu.');
+
     await reaction(m.chat, "❌");
+    await m.reply("❌ Gagal mengecek update.");
+
 }
 break;
 
