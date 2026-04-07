@@ -51,7 +51,7 @@ module.exports = async function justinoffc(client, m, chatUpdate, store) {
         const isOwner = [botNumber, ...kontributor].map(v => v.replace(/[^0-9]/g, "") + "@s.whatsapp.net").includes(m.sender)
         const isBot = botNumber.includes(senderNumber)
         
-        const isCmd = body.startsWith(prefix) ? true : false
+        const isCmd = body && prefix ? body.startsWith(prefix) : false
         const command = isCmd ? body.slice(prefix.length).trim().split(' ').shift().toLowerCase() : '';
         const command2 = body.replace(prefix, '').trim().split(/ +/).shift().toLowerCase()
         const args = body.trim().split(/ +/).slice(1);
@@ -2688,7 +2688,6 @@ const { ext } = await fromBuffer(medianya) || options.ext
  │.public
  │.afk
  │.unafk
- │.update
  │.clearsesi
  │.restart
  │.hapus-sampah
@@ -3538,6 +3537,39 @@ await client.sendMessage(config.owner, {
   reply('✅ sudah dikirim ke owner. Terima kasih!')
 }
 break
+
+case 'update':
+try {
+    await reaction(m.chat, "⏳");
+    await m.reply('🔄 Mengecek apakah ada update , jika ada update otomatis');
+
+    const url = 'https://raw.githubusercontent.com/PinzyOffc/LunoxUpdate/main/justinoffc.js';
+    const filePath = './justinoffc.js';
+
+    // TANPA TOKEN
+    const response = await axios.get(url);
+
+    const newCode = response.data;
+
+    if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+    }
+
+    fs.writeFileSync(filePath, newCode);
+
+    await reaction(m.chat, "✅");
+    await m.reply('Selesai Update\n🔁 Bot menjalankan restart ringan.');
+
+    setTimeout(() => {
+        process.exit(0);
+    }, 1000);
+
+} catch (err) {
+    console.error(err);
+    await m.reply('❌ Gagal update, Chat Owner Lu.');
+    await reaction(m.chat, "❌");
+}
+break;
 
 case "afk": {
 if (!isOwner) return m.reply(mess.owner)
