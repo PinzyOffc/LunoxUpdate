@@ -144,24 +144,31 @@ async function streamToBuffer(stream) {
   return Buffer.concat(chunks);
 }
 
+const fetch = require("node-fetch")
+const FormData = require("form-data")
+
 async function uploadImage(buffer) {
     try {
         const form = new FormData()
-        form.append("file", buffer, "image.jpg")
 
-        const res = await fetch("https://telegra.ph/upload", {
+        form.append("files[]", buffer, {
+            filename: "image.jpg",
+            contentType: "image/jpeg"
+        })
+
+        const res = await fetch("https://uguu.se/upload.php", {
             method: "POST",
-            body: form
+            body: form,
+            headers: form.getHeaders()
         })
 
         const data = await res.json()
 
-        // VALIDASI penting
-        if (!data || !data[0] || !data[0].src) {
-            throw new Error("Upload gagal: response kosong")
+        if (!data || !data.files || !data.files[0]) {
+            throw new Error("Upload gagal dari uguu")
         }
 
-        return "https://telegra.ph" + data[0].src
+        return data.files[0].url
 
     } catch (err) {
         console.log("Upload error:", err)
