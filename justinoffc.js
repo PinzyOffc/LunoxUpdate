@@ -2511,6 +2511,59 @@ try {
 
 break;
 
+case 'terlanjang': {
+    try {
+        if (!m.quoted && !text) {
+            return reply("Balas foto atau kirim URL setelah command .terlanjang");
+        }
+
+        reply("⌭ Memproses gambar...");
+
+        let imageUrl;
+
+        if (m.quoted && /image/.test(m.quoted.mimetype)) {
+            const media = await m.quoted.download();
+            
+            const uploaded = await uploadImage(media);
+            imageUrl = uploaded;
+        } 
+
+        else if (text) {
+            imageUrl = text;
+        }
+
+        if (!imageUrl) {
+            return reply("Gagal mengambil gambar.");
+        }
+
+        const res = await fetch(
+            `https://api.nekolabs.my.id/tools/convert/remove-clothes?imageUrl=${encodeURIComponent(imageUrl)}`
+        );
+
+        const data = await res.json();
+        const hasil = data.result;
+
+        if (!hasil) {
+            return reply("Gagal memproses gambar.");
+        }
+
+        await sock.sendMessage(m.chat, {
+            image: { url: hasil },
+            caption:
+`⎙ Selesai
+━━━━━━━━━━━━━
+━━━【 𝙇𝙐𝙉𝙊𝙓 𝙏𝙊𝙊𝙇𝙎 】━━━
+⸎ Pengirim: ${pushname}
+⎙ Gambar berhasil diproses`
+        });
+
+    } catch (e) {
+        console.log(e);
+        reply("Terjadi kesalahan saat memproses gambar.");
+    }
+}
+break;
+				
 case "afk": {
 if (!isOwner) return m.reply(mess.owner)
 global.owneroff = true
