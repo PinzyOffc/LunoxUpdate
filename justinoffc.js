@@ -11,6 +11,7 @@ const axios = require('axios');
 const chalk = require("chalk");
 const jimp = require("jimp")
 const util = require("util");
+const FormData = require("form-data");
 const fetch = require("node-fetch")
 const moment = require("moment-timezone");
 const path = require("path")
@@ -53,7 +54,7 @@ module.exports = async function justinoffc(client, m, chatUpdate, store) {
         
         const isCmd = body && prefix ? body.startsWith(prefix) : false
         const command = isCmd ? body.slice(prefix.length).trim().split(' ').shift().toLowerCase() : '';
-        const command2 = body.replace(prefix, '').trim().split(/ +/).shift().toLowerCase()
+        const command2 = (body || '').replace(prefix, '').trim().split(/ +/).shift().toLowerCase()
         const args = body.trim().split(/ +/).slice(1);
         const pushname = m.pushName || "No Name";
         const text = q = args.join(" ");
@@ -143,6 +144,23 @@ async function streamToBuffer(stream) {
   return Buffer.concat(chunks);
 }
 
+async function uploadImage(buffer) {
+    const form = new FormData()
+    form.append("file", buffer, "image.jpg")
+
+    const res = await fetch("https://telegra.ph/upload", {
+        method: "POST",
+        body: form
+    })
+
+    const data = await res.json()
+
+    if (!data || !data[0]) {
+        throw new Error("Upload gagal")
+    }
+
+    return "https://telegra.ph" + data[0].src
+}
         
 const qpayment = {
 key: {
