@@ -144,12 +144,6 @@ async function streamToBuffer(stream) {
   return Buffer.concat(chunks);
 }
 
-const fetch = require("node-fetch")
-const FormData = require("form-data")
-
-const fetch = require("node-fetch")
-const FormData = require("form-data")
-
 async function uploadImage(buffer) {
     try {
         const form = new FormData()
