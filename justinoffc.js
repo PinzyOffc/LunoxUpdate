@@ -2559,7 +2559,7 @@ case 'terlanjang': {
         );
 
         const data = await res.json();
-        const hasil = data.result;
+        const hasil = data.result || null
 
         if (!hasil) {
             return reply("Gagal memproses gambar.");
