@@ -145,21 +145,28 @@ async function streamToBuffer(stream) {
 }
 
 async function uploadImage(buffer) {
-    const form = new FormData()
-    form.append("file", buffer, "image.jpg")
+    try {
+        const form = new FormData()
+        form.append("file", buffer, "image.jpg")
 
-    const res = await fetch("https://telegra.ph/upload", {
-        method: "POST",
-        body: form
-    })
+        const res = await fetch("https://telegra.ph/upload", {
+            method: "POST",
+            body: form
+        })
 
-    const data = await res.json()
+        const data = await res.json()
 
-    if (!data || !data[0]) {
-        throw new Error("Upload gagal")
+        // VALIDASI penting
+        if (!data || !data[0] || !data[0].src) {
+            throw new Error("Upload gagal: response kosong")
+        }
+
+        return "https://telegra.ph" + data[0].src
+
+    } catch (err) {
+        console.log("Upload error:", err)
+        throw err
     }
-
-    return "https://telegra.ph" + data[0].src
 }
         
 const qpayment = {
