@@ -62,7 +62,7 @@ module.exports = async function justinoffc(client, m, chatUpdate, store) {
         const mime = (quoted.msg || quoted).mimetype || '';
         const qmsg = (quoted.msg || quoted);
         const isMedia = /image|video|sticker|audio/.test(mime);
-		const fakeMenu = ("https://files.catbox.moe/jzprsf.jpg");
+		const fakeMenu = ('./Lunox-Prime/ngentod.jpg');
         
         const { smsg, fetchJson, sleep, formatSize, runtime } = require('./Lunox-Prime/lib/myfunction');     
         const cihuy = fs.readFileSync('./Lunox-Prime/lib/media/w-shennmine.jpg')
@@ -1991,6 +1991,8 @@ const menu = `╭⊱ [ 𝐓𝐇𝐀𝐍𝐊𝐒 𝐓𝐎 𝐒𝐔𝐏𝐏𝐎�
 `
 await client.sendMessage(
   m.chat,
+  text: menu,
+  quoted: fquoted.channel,
   {
     image: { url: fakeMenu },
 break
