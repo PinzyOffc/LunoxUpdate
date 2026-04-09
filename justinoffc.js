@@ -62,6 +62,7 @@ module.exports = async function justinoffc(client, m, chatUpdate, store) {
         const mime = (quoted.msg || quoted).mimetype || '';
         const qmsg = (quoted.msg || quoted);
         const isMedia = /image|video|sticker|audio/.test(mime);
+		const fakeMenu = ("https://files.catbox.moe/jzprsf.jpg");
         
         const { smsg, fetchJson, sleep, formatSize, runtime } = require('./Lunox-Prime/lib/myfunction');     
         const cihuy = fs.readFileSync('./Lunox-Prime/lib/media/w-shennmine.jpg')
@@ -1978,18 +1979,20 @@ const menu = `╭⊱ [ 𝐓𝐇𝐀𝐍𝐊𝐒 𝐓𝐎 𝐒𝐔𝐏𝐏𝐎�
 ┃❏ Support 1 : Allah ( 𝗠𝘆 𝗚𝗼𝗼𝗱 )
 ┃❏ Support 2 : Orang tua ( 𝗠𝘆 𝗪𝗶𝗳𝗲 )
 ┃❏ Support 3 : Pinzy ( 𝗗𝗲𝘃𝗲𝗹𝗼𝗽𝗲𝗿 )
-┃❏ Support 4 : Malzz ( 
 ┃❏ Support 5 : Yanz ( 𝗙𝗿𝗶𝗲𝗻𝗱𝘀 𝗜 )
 ┃❏ Support 6 : Skyz ( 𝗙𝗿𝗶𝗲𝗻𝗱𝘀 𝗜𝗜 )
 ┃❏ Support 7 : Saka ( 𝗙𝗿𝗶𝗲𝗻𝗱𝘀 𝗜𝗜𝗜 )
+┃❏ Support 4 : Malzz ( 𝗙𝗿𝗶𝗲𝗻𝗱𝘀 𝗜𝗩 )
 ┃❏ Support 8 : Ikyz ( 𝗦𝘂𝗽𝗽𝗼𝗿𝘁 𝗜 )
 ┃❏ Support 9 : LiuLan ( 𝗦𝘂𝗽𝗽𝗼𝗿𝘁 𝗜𝗜 )
 ┃❏ Support 10 : Faridz ( 𝗦𝘂𝗽𝗽𝗼𝗿𝘁 𝗜𝗜𝗜 )
 ┃❏ Support 11 : 𝗔𝗟𝗟 𝗕𝗨𝗬𝗘𝗥 / 𝗠𝗘𝗠𝗕𝗘𝗥 𝗟𝗨𝗡𝗢𝗫
 ╰━━━━━━━━━━━━━━━━━━━
 `
-client.sendMessage(m.chat, {text: menu}, {quoted: fquoted.channel})
-}
+await client.sendMessage(
+  m.chat,
+  {
+    image: { url: fakeMenu },
 break
 
             case "tt":
