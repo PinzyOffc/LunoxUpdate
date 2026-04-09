@@ -2196,20 +2196,11 @@ const menu = `╭⊱ [ 𝐓𝐇𝐀𝐍𝐊𝐒 𝐓𝐎 𝐒𝐔𝐏𝐏𝐎�
 ┃❏ Support 11 : 𝗔𝗟𝗟 𝗕𝗨𝗬𝗘𝗥 / 𝗠𝗘𝗠𝗕𝗘𝗥 𝗟𝗨𝗡𝗢𝗫
 ╰━━━━━━━━━━━━━━━━━━━
 `
-await client.sendMessage(
-  m.chat,
-  {
-    image: { url: fakeMenu },
-    caption: menu
-  },
-  {
-    quoted: fquoted.channel
-  }
-);
-
-break;
-
-            case "tt":
+client.sendMessage(m.chat, {text: menu}, {quoted: fquoted.channel})
+}
+break
+	        
+			case "tt":
             case "tiktok": {
                 if (!text) return reply(config.message.ex + prefix + command + " url tiktok")
                 const tiktokRegex = /(https?:\/\/)?(www\.)?(vm|vt|m|www)?\.?tiktok\.com\/[^\s]+/i;
