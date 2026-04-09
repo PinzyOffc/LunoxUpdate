@@ -44,7 +44,7 @@ module.exports = async function justinoffc(client, m, chatUpdate, store) {
         const prefa = ["", "!", ".", ",", "🐤", "🗿"];
 
         const prefixRegex = /^[°zZ#$@*+,.?=''():√%!¢£¥€π¤ΠΦ_&><`™©®Δ^βα~¦|/\\©^]/;
-        const prefix = prefixRegex.test(body) ? body.match(prefixRegex)[0] : '.';
+        const prefix = prefixRegex.test(body) ? body.match(prefixRegex)[0] : '';
         const from = m.key.remoteJid;
         const isGroup = from.endsWith("@g.us");
         const botNumber = await client.decodeJid(client.user.id);
