@@ -1206,6 +1206,13 @@ const { ext } = await fromBuffer(medianya) || options.ext
                             id: `.toolsmenu`
                             })
                     },
+				    {
+                        name: "quick_reply",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: "𝘎𝘳𝘰𝘶𝘱𝘔𝘦𝘯𝘶",
+                            id: `.groupmenu`
+                            })
+                    },
                     {
                         name: "quick_reply",
                         buttonParamsJson: JSON.stringify({
@@ -1390,6 +1397,13 @@ const { ext } = await fromBuffer(medianya) || options.ext
                         buttonParamsJson: JSON.stringify({
                             display_text: "𝘛𝘰𝘰𝘭𝘴𝘮𝘦𝘯𝘶",
                             id: `.toolsmenu`
+                            })
+                    },
+					{
+                        name: "quick_reply",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: "𝘎𝘳𝘰𝘶𝘱𝘔𝘦𝘯𝘶",
+                            id: `.groupmenu`
                             })
                     },
                     {
@@ -1578,6 +1592,13 @@ const { ext } = await fromBuffer(medianya) || options.ext
                             id: `.toolsmenu`
                             })
                     },
+				    {
+                        name: "quick_reply",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: "𝘎𝘳𝘰𝘶𝘱𝘔𝘦𝘯𝘶",
+                            id: `.groupmenu`
+                            })
+                    },
                     {
                         name: "quick_reply",
                         buttonParamsJson: JSON.stringify({
@@ -1761,6 +1782,13 @@ https://whatsapp.com/channel/0029Vb7LQp1AojYtRXxiCT2U`
                         buttonParamsJson: JSON.stringify({
                             display_text: "𝘛𝘰𝘰𝘭𝘴𝘮𝘦𝘯𝘶",
                             id: `.toolsmenu`
+                            })
+                    },
+				    {
+                        name: "quick_reply",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: "𝘎𝘳𝘰𝘶𝘱𝘔𝘦𝘯𝘶",
+                            id: `.groupmenu`
                             })
                     },
                     {
