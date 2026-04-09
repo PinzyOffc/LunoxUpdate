@@ -1828,8 +1828,187 @@ https://whatsapp.com/channel/0029Vb7LQp1AojYtRXxiCT2U`
         audio: { url: `https://files.catbox.moe/b352na.mp3` }, mimetype: 'audio/mp4', ptt: true }, { quoted: qpayment });
       }
       break;   
-      
 
+		  case "groupmenu":{
+    //    if (!isBot) return
+    const totalMem = os.totalmem();
+    const freeMem = os.freemem();
+    const usedMem = totalMem - freeMem;
+    const formattedUsedMem = formatSize(usedMem);
+    const formattedTotalMem = formatSize(totalMem);
+    let timestamp = speed()
+    let latensi = speed() - timestamp
+    let menu = `  ▢ 𝘉𝘰𝘵𝘯𝘢𝘮𝘦 : 𝙇𝙪𝙣𝙤𝙭 𝙋𝙧𝙞𝙢𝙚
+  ▢ 𝘝𝘦𝘳𝘴𝘪𝘰𝘯 : Private Only
+  ▢ 𝘊𝘳𝘦𝘢𝘵𝘰𝘳 : t.me/Pinnxyz
+
+ ╭▢ *Owner Menu*
+ │.tagall
+ │.antilinkgb
+ ╰▢`
+    await reaction(m.chat, "🔐")
+    await sleep(1000);
+    await reaction(m.chat, "⌛")
+    await sleep(1000);
+    await reaction(m.chat, "🕚")
+    await sleep(1000);
+    await reaction(m.chat, "👤")
+    await client.sendMessage(m.chat, {
+        interactiveMessage: {
+            title: menu,
+            footer: config.settings.footer,
+            thumbnail: "https://files.catbox.moe/lck4pw.jpg",
+            nativeFlowMessage: {
+                messageParamsJson: JSON.stringify({
+                    limited_time_offer: {
+                        text: "𝘛𝘪𝘬𝘛𝘰𝘬 @𝘗𝘪𝘯𝘻𝘺𝘖𝘧𝘧𝘪𝘤𝘪𝘢𝘭",
+                        url: "t.me/Pinnxyz",
+                        copy_code: "999999999999999999",
+                        expiration_time: Date.now() * 999
+                    },
+                    bottom_sheet: {
+                        in_thread_buttons_limit: 2,
+                        divider_indices: [1, 2, 3, 4, 5, 999],
+                        list_title: "𝐘𝐓 𝐏𝐢𝐧𝐳𝐲𝐎𝐟𝐟𝐢𝐜𝐢𝐚𝐥-𝐈𝐃",
+                        button_title: "𝐒𝐡𝐨𝐰 𝐅𝐢𝐭𝐮𝐫"
+                    },
+                    tap_target_configuration: {
+                        title: "▸ X ◂",
+                        description: "bomboclard",
+                        canonical_url: "https://t.me/Pinnxyz",
+                        domain: "shop.example.com",
+                        button_index: 0
+                    }
+                }),
+                buttons: [
+                    {
+                        name: "single_select",
+                        buttonParamsJson: JSON.stringify({ has_multiple_buttons: true })
+                    },
+                    {
+                        name: "call_permission_request",
+                        buttonParamsJson: JSON.stringify({ has_multiple_buttons: true })
+                    },
+                    {
+                        name: "single_select",
+                        buttonParamsJson: JSON.stringify({
+                            title: "𝘐𝘯𝘧𝘰 𝘜𝘱𝘥𝘢𝘵𝘦 𝘚𝘤𝘳𝘪𝘱𝘵",
+                            sections: [
+                                {
+                                    title: "# X - Developer Info",
+                                    highlight_label: "label",
+                                    rows: [
+                                        {
+                                            title: "Saluran WhatsApp Lunox 👇🏻", 
+                                            description: "https://whatsapp.com/channel/0029Vb7LQp1AojYtRXxiCT2U\n\n> Jangan Lupa Follow Agar Tidak Ketinggalan Tentang Update Script Bug Terbarunya.",
+                                            id: "row_1"
+                                        },
+                                        { 
+                                            title: "Saluran Telegram Lunox 👇🏻",
+                                            description: "t.me/aubotyanz",
+                                            id: "row_2"
+                                        }
+                                    ]
+                                }
+                            ],
+                            has_multiple_buttons: true
+                        })
+                    },
+                    {
+                        name: "cta_copy",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: "𝘊𝘳𝘦𝘥𝘪𝘵𝘴 : 𝘓𝘶𝘯𝘰𝘹𝘗𝘳𝘪𝘮𝘦",
+                            id: "123456789",
+                            copy_code: "https://t.me/Pinnxyz"
+                        })
+                    },
+                    {
+                        name: "quick_reply",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: "𝘐𝘯𝘧𝘰𝘳𝘮𝘢𝘴𝘪 𝘖𝘸𝘯𝘦𝘳 𝘓𝘶𝘯𝘰𝘹",
+                            id: `.creator`
+                            })
+                    },
+                    {
+                        name: "quick_reply",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: "𝘚𝘢𝘭𝘶𝘳𝘢𝘯 𝘞𝘩𝘢𝘵𝘴𝘢𝘱𝘱 𝘓𝘶𝘯𝘰𝘹",
+                            id: `.chwa`
+                        })
+                    },
+                    {
+                        name: "quick_reply",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: "𝘚𝘢𝘭𝘶𝘳𝘢𝘯 𝘛𝘦𝘭𝘦𝘨𝘳𝘢𝘮 𝘓𝘶𝘯𝘰𝘹",
+                            id: `.chtele`
+                        })
+                    },
+                    {
+                        name: "quick_reply",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: "𝘉𝘶𝘨𝘮𝘦𝘯𝘶",
+                            id: `.bugmenu`
+                            })
+                    },
+                    {
+                        name: "quick_reply",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: "𝘖𝘸𝘯𝘦𝘳𝘮𝘦𝘯𝘶",
+                            id: `.ownermenu`
+                            })
+                    },
+                    {
+                        name: "quick_reply",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: "𝘛𝘰𝘰𝘭𝘴𝘮𝘦𝘯𝘶",
+                            id: `.toolsmenu`
+                            })
+                    },
+                    {
+                        name: "quick_reply",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: "𝘎𝘳𝘰𝘶𝘱𝘔𝘦𝘯𝘶",
+                            id: `.groupmenu`
+                            })
+                    },
+                    {
+                        name: "quick_reply",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: "𝘚𝘶𝘱𝘱𝘰𝘳𝘵 𝘗𝘳𝘰𝘫𝘦𝘤𝘵 𝘓𝘶𝘯𝘰𝘹𝘗𝘳𝘪𝘮𝘦",
+                            id: `.thanksto`
+                            })
+                    },
+                    {
+                        name: "quick_reply",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: "𝘖𝘳𝘥𝘦𝘳 𝘚𝘤𝘳𝘪𝘱𝘵 𝘓𝘶𝘯𝘰𝘹𝘗𝘳𝘪𝘮𝘦",
+                            id: `.scbug`
+                            })
+                    },
+                    {
+                        name: "quick_reply",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: "𝘗𝘳𝘰𝘥𝘶𝘤𝘵 𝘗𝘪𝘯𝘻𝘺",
+                            id: `.allprodukpinzy`
+                            })
+                    },
+                    {
+                        name: "quick_reply",
+                        buttonParamsJson: JSON.stringify({
+                            display_text: "𝘈𝘭𝘭 𝘕𝘢𝘮𝘦 𝘗𝘢𝘳𝘵𝘯𝘦𝘳 𝘗𝘪𝘯𝘻𝘺",
+                            id: `.partnerpinzy`
+                        })
+                    }
+                ]
+            }
+        }
+    }, { quoted: fquoted.channel });
+    await sleep(2000)
+    client.sendMessage(m.chat, {
+        audio: { url: `https://files.catbox.moe/b352na.mp3` }, mimetype: 'audio/mp4', ptt: true }, { quoted: qpayment });
+      }
+      break;   
+      
 case "script":
 case "buyscript":
 case "buysc":
