@@ -2205,7 +2205,7 @@ break
                 if (!text) return reply(config.message.ex + prefix + command + " url tiktok")
                 const tiktokRegex = /(https?:\/\/)?(www\.)?(vm|vt|m|www)?\.?tiktok\.com\/[^\s]+/i;
                 if (!tiktokRegex.test(text)) return reply("URL TikTok tidak valid")
-                const api = await fetch(`https://api.nekolabs.web.id/downloader/tiktok?url=${encodeURIComponent(text)}`);
+                const api = await fetch(`https://rynekoo-api.hf.space/api/tiktok?url=${encodeURIComponent(text)}`);
                 const res = await api.json();
                 const data = res.result;
                 return await client.sendMessage(m.chat, {
