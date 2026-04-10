@@ -2201,55 +2201,20 @@ client.sendMessage(m.chat, {text: menu}, {quoted: fquoted.channel})
 break
 	        
 case "tt":
-case "tiktok": {
-
-    if (!text)
-        return reply("Masukkan URL TikTok");
-
-    const tiktokRegex = /(https?:\/\/)?(www\.)?(vm|vt|m|www)?\.?tiktok\.com\/[^\s]+/i;
-
-    if (!tiktokRegex.test(text))
-        return reply("URL TikTok tidak valid");
-
-    try {
-
-        const api = await fetch(
-            `https://rynekoo-api.hf.space/api/tiktok?url=${encodeURIComponent(text)}`
-        );
-
-        if (!api.ok)
-            return reply("API TikTok sedang error");
-
-        const res = await api.json();
-
-        if (!res.result)
-            return reply("Result kosong dari API");
-
-        const data = res.result;
-
-        // 🔥 CEK videoUrl
-        if (!data.videoUrl)
-            return reply("Video tidak ditemukan (videoUrl kosong)");
-
-        await client.sendMessage(
-            m.chat,
-            {
-                video: { url: data.videoUrl },
-                caption: data.title || "TikTok Downloader"
-            },
-            { quoted: m }
-        );
-
-    } catch (err) {
-
-        console.log("TT ERROR:", err);
-
-        reply("Gagal mengambil video TikTok");
-
-    }
-
-}
-break;case            
+            case "tiktok": {
+                if (!text) return reply(config.message.ex + prefix + command + " url tiktok")
+                const tiktokRegex = /(https?:\/\/)?(www\.)?(vm|vt|m|www)?\.?tiktok\.com\/[^\s]+/i;
+                if (!tiktokRegex.test(text)) return reply("URL TikTok tidak valid")
+                const api = await fetch(`https://rynekoo-api.hf.space/api/tiktok?url=${encodeURIComponent(text)}`);
+                const res = await api.json();
+                const data = res.result;
+                return await client.sendMessage(m.chat, {
+                    video: { url: data.videoUrl },
+                    caption: data.title || "TikTok Downloader"
+                }, { quoted: fquoted.channel });
+            }
+            break      
+				
 case 'tourl': {
                 
                 if (!/video/.test(mime) && !/image/.test(mime)) return m.reply(`Reply Gambar Dengan Keterangan/Caption ${prefix+command}`);
@@ -2261,7 +2226,8 @@ case 'tourl': {
             }
             break
 
-case 'cc': case 'capcut': {
+case 'cc':
+case 'capcut': {
 	
 function download(url) {
   return new Promise(async(resolve, reject) => {
