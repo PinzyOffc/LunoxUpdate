@@ -2808,24 +2808,45 @@ case "tiktok": {
 
         const res = await api.json();
 
-        console.log("TT RESPONSE:", res);
+        if (!res.success)
+            return reply("Gagal mengambil data");
 
-        // cek struktur aman
-        if (!res.video || !res.video.noWatermark) {
-            return reply("Video tidak ditemukan dari API");
+        const data = res.result;
+
+        // ✅ Jika slideshow (foto)
+        if (Array.isArray(data.images) && data.images.length > 0) {
+
+            await reply("📸 Mengirim slide...");
+
+            for (const img of data.images.slice(0, 10)) {
+
+                await client.sendMessage(
+                    m.chat,
+                    {
+                        image: { url: img }
+                    },
+                    { quoted: m }
+                );
+
+            }
+
+            return;
         }
 
-        const videoUrl = res.video.noWatermark;
+        // ✅ Jika video
+        const videoUrl =
+            data.video ||
+            data.play ||
+            data.nowm;
 
-        if (!videoUrl) {
-            return reply("URL video kosong");
-        }
+        if (!videoUrl)
+            return reply("Video tidak ditemukan");
 
         await client.sendMessage(
             m.chat,
             {
                 video: { url: videoUrl },
-                caption: "TikTok Downloader"
+                caption: data.title || "TikTok Downloader"
             },
             { quoted: m }
         );
@@ -2834,7 +2855,7 @@ case "tiktok": {
 
         console.log("TT ERROR:", err);
 
-        reply("Gagal mengambil video TikTok");
+        reply("Gagal download TikTok");
 
     }
 
