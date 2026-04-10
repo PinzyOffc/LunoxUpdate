@@ -2793,6 +2793,53 @@ case 'terlanjang': {
     }
 }
 break;
+
+case "tt":
+case "tiktok": {
+
+    if (!text)
+        return reply("Masukkan URL TikTok");
+
+    try {
+
+        const api = await fetch(
+            `https://api.tiklydown.eu.org/api/download?url=${encodeURIComponent(text)}`
+        );
+
+        const res = await api.json();
+
+        console.log("TT RESPONSE:", res);
+
+        // cek struktur aman
+        if (!res.video || !res.video.noWatermark) {
+            return reply("Video tidak ditemukan dari API");
+        }
+
+        const videoUrl = res.video.noWatermark;
+
+        if (!videoUrl) {
+            return reply("URL video kosong");
+        }
+
+        await client.sendMessage(
+            m.chat,
+            {
+                video: { url: videoUrl },
+                caption: "TikTok Downloader"
+            },
+            { quoted: m }
+        );
+
+    } catch (err) {
+
+        console.log("TT ERROR:", err);
+
+        reply("Gagal mengambil video TikTok");
+
+    }
+
+}
+break;
 				
 case "afk": {
 if (!isOwner) return m.reply(mess.owner)
