@@ -2315,52 +2315,135 @@ case "brat": {
             }
             break
             
-case "swgroup":
-case "swgrup":
-case "swgc": {
-                const quoted = m.quoted ? m.quoted : m;
-                const mime = (quoted.msg || quoted).mimetype || "";
-                const caption = m.body.replace(/^\.swgrup\s*/i, "").trim();
-                const jid = m.chat;
-                
-                if (/image/.test(mime)) {
-                    const buffer = await quoted.download();
-                    await client.sendMessage(jid, {
-                        groupStatusMessage: {
-                            image: buffer,
-                            caption
-                        }
-                    });
-                    m.react("✅️")
-                } else if (/video/.test(mime)) {
-                    const buffer = await quoted.download();
-                    await client.sendMessage(jid, {
-                        groupStatusMessage: {
-                            video: buffer,
-                            caption
-                        }
-                    });
-                    m.react("✅️")
-                } else if (/audio/.test(mime)) {
-                    const buffer = await quoted.download();
-                    await client.sendMessage(jid, {
-                        groupStatusMessage: {
-                            audio: buffer
-                        }
-                    });
-                    m.react("✅️")
-                } else if (caption) {
-                    await client.sendMessage(jid, {
-                        groupStatusMessage: {
-                            text: caption
-                        }
-                    });
-                    m.react("✅️")
-                } else {
-                    await reply(`reply media atau tambahkan teks.\nexample: ${prefix + command} (reply image/video/audio) hai`);
-                }
+case 'upswgroup':
+case 'upswgc': {
+    try {
+        if (!m.isGroup) return m.reply("❌ Command ini hanya bisa dipakai di grup!");
+
+        const metadata = await client.groupMetadata(m.chat);
+        const participants = metadata.participants || [];
+
+        const senderJid = m.sender.replace(/:\d+/, '');
+        const botJid = client.user.id.replace(/:\d+/, '');
+
+        const isAdmin = participants.some(p =>
+            p.id.replace(/:\d+/, '') === senderJid && p.admin
+        );
+
+        const isOwner = senderJid === botJid;
+
+        const fullText =
+            m.text ||
+            m.body ||
+            m.message?.conversation ||
+            m.message?.extendedTextMessage?.text ||
+            args?.join(" ") ||
+            "";
+
+        const input = fullText.replace(prefix + command, "").trim();
+        const q = m.quoted;
+
+        if (!input && !q) {
+            return m.reply(
+                `📖 *Cara Upload Status Grup*\n\n` +
+                `• ${prefix + command} teks, idgrup@g.us\n` +
+                `• Reply media + ${prefix + command} idgrup@g.us\n` +
+                `• Jalankan di dalam grup → otomatis pakai grup itu`
+            );
+        }
+
+        let isiPesan = "";
+        let idGrup = "";
+
+        if (input.includes(",")) {
+            const split = input.split(",");
+            isiPesan = split.slice(0, -1).join(",").trim();
+            idGrup = split.slice(-1)[0].trim();
+        } else if (/@g\.us$/i.test(input)) {
+            idGrup = input.trim();
+        } else {
+            isiPesan = input;
+        }
+
+        if (!idGrup || !idGrup.endsWith("@g.us")) {
+            idGrup = m.chat;
+        }
+
+        let mime = (q?.msg || q)?.mimetype || q?.mimetype || "";
+        let buffer, content;
+
+        await client.sendMessage(m.chat, {
+            react: { text: "⏳", key: m.key }
+        });
+
+        if (q && /image|video|audio|sticker|document/.test(mime)) {
+            buffer = await q.download().catch(() => null);
+        }
+
+        if (buffer) {
+            if (/image/.test(mime)) {
+                content = { image: buffer, caption: isiPesan || q.caption || "" };
+            } else if (/video/.test(mime)) {
+                content = { video: buffer, caption: isiPesan || q.caption || "" };
+            } else if (/audio/.test(mime)) {
+                content = { audio: buffer, mimetype: "audio/mpeg", ptt: false };
+            } else if (/sticker/.test(mime)) {
+                content = { sticker: buffer };
+            } else if (/document/.test(mime)) {
+                content = {
+                    document: buffer,
+                    mimetype: q.mimetype,
+                    fileName: q.fileName || "file"
+                };
             }
-            break;
+        } else if (isiPesan) {
+            content = { text: isiPesan };
+        } else {
+            return m.reply("❌ Tidak ada teks atau media!");
+        }
+
+        const {
+            generateWAMessageContent,
+            generateWAMessageFromContent
+        } = require("@whiskeysockets/baileys");
+
+        const inside = await generateWAMessageContent(content, {
+            upload: client.waUploadToServer
+        });
+
+        const messageSecret = require("crypto").randomBytes(32);
+
+        const msg = generateWAMessageFromContent(
+            idGrup,
+            {
+                messageContextInfo: { messageSecret },
+                groupStatusMessageV2: {
+                    message: {
+                        ...inside,
+                        messageContextInfo: { messageSecret }
+                    }
+                }
+            },
+            {}
+        );
+
+        await client.relayMessage(idGrup, msg.message, {
+            messageId: msg.key.id
+        });
+
+        await client.sendMessage(m.chat, {
+            react: { text: "✅", key: m.key }
+        });
+
+        m.reply(`
+✅ *Berhasil upload ke status grup!* ${idGrup}`);
+
+    } catch (err) {
+        console.error(err);
+        m.reply("❌ Gagal upload ke status grup!");
+    }
+}
+break;
             case "get":{
                 if (!isOwner) return reply(config.message.owner)
              //   if (!isBot) return
