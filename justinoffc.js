@@ -2803,7 +2803,7 @@ case "tiktok": {
     try {
 
         const api = await fetch(
-            `https://api.tiklydown.eu.org/api/download?url=${encodeURIComponent(text)}`
+            `https://rynekoo-api.hf.space/downloader/tiktok?url=${encodeURIComponent(text)}`
         );
 
         const res = await api.json();
