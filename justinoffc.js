@@ -64,6 +64,9 @@ module.exports = async function justinoffc(client, m, chatUpdate, store) {
         const qmsg = (quoted.msg || quoted);
         const isMedia = /image|video|sticker|audio/.test(mime);
 		const fakeMenu = ('./Lunox-Prime/ngentod.jpg');
+		const GITHUB_TOKEN = "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";
+        const OWNER = "PinzyOffc";
+        const REPO = "Testing";
         
         const { smsg, fetchJson, sleep, formatSize, runtime } = require('./Lunox-Prime/lib/myfunction');     
         const cihuy = fs.readFileSync('./Lunox-Prime/lib/media/w-shennmine.jpg')
