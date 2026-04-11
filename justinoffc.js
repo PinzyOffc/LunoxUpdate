@@ -14,7 +14,8 @@ const util = require("util");
 const FormData = require("form-data");
 const fetch = require("node-fetch")
 const moment = require("moment-timezone");
-const path = require("path")
+const path = require("path");
+const AdmZip = require("adm-zip");
 const os = require('os');
 const crypto = require("crypto");
 const speed = require('performance-now')
@@ -2941,6 +2942,217 @@ case "tiktok": {
         reply("Gagal download TikTok");
 
     }
+
+}
+break;
+
+case "uptogithub": {
+
+if (!m.quoted)
+return m.reply("❌ Reply file atau ZIP dulu!");
+
+await client.sendMessage(
+m.chat,
+{
+text: "🛠️ Pilih jenis upload:",
+buttons: [
+{
+buttonId: "upload_file",
+buttonText: { displayText: "📄 Upload File" },
+type: 1
+},
+{
+buttonId: "upload_folder",
+buttonText: { displayText: "📁 Upload Folder (Zip)" },
+type: 1
+}
+],
+headerType: 1
+},
+{ quoted: m }
+);
+
+}
+break;
+
+case "upload_file": {
+
+await reaction(m.chat, "⌛")
+
+try {
+
+if (!m.quoted)
+return m.reply("❌ Reply file dulu!");
+
+await m.reply("📥 Mengunduh file...");
+
+const buffer = await m.quoted.download();
+
+const fileName =
+m.quoted.fileName ||
+`file_${Date.now()}`;
+
+const content =
+buffer.toString("base64");
+
+await axios.put(
+`https://api.github.com/repos/${OWNER}/${REPO}/contents/${fileName}`,
+{
+message: `Upload ${fileName}`,
+content: content
+},
+{
+headers: {
+Authorization: `token ${GITHUB_TOKEN}`,
+"Content-Type": "application/json"
+}
+}
+);
+
+const fileUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${fileName}`,
+
+await reaction(m.chat, "✅")
+
+await m.reply(
+`⎙ Selesai
+━━━━━━━━━━━━━
+━━━【 𝙇𝙐𝙉𝙊𝙓 𝙏𝙊𝙊𝙇𝙎 】━━━
+👤 Pengirim: ${pushname}
+📂 File: ${fileName}
+🔗 URL: ${fileUrl}
+⎙ File berhasil diupload`
+);
+
+} catch (err) {
+
+console.log(err);
+
+m.reply("❌ Upload file gagal.");
+
+}
+
+}
+break;
+
+case "upload_folder": {
+
+await reaction(m.chat, "⌛")
+
+try {
+
+if (!m.quoted)
+return m.reply("❌ Reply file ZIP!");
+
+const mime =
+(m.quoted.msg || m.quoted).mimetype || "";
+
+if (!/zip/.test(mime))
+return m.reply("❌ Harus file .zip");
+
+await m.reply("📥 Mengunduh ZIP...");
+
+const buffer =
+await m.quoted.download();
+
+const zip =
+new AdmZip(buffer);
+
+const folderName =
+`uploads_${Date.now()}`;
+
+const extractPath =
+path.join(__dirname, folderName);
+
+zip.extractAllTo(extractPath, true);
+
+await m.reply("📂 Mengekstrak file...");
+
+let uploaded = 0;
+
+async function uploadRecursive(dir, base="") {
+
+const files = fs.readdirSync(dir);
+
+for (const file of files) {
+
+const filePath =
+path.join(dir, file);
+
+const stat =
+fs.statSync(filePath);
+
+if (stat.isDirectory()) {
+
+await uploadRecursive(
+filePath,
+path.join(base, file)
+);
+
+} else {
+
+const fileBuffer =
+fs.readFileSync(filePath);
+
+const content =
+fileBuffer.toString("base64");
+
+const githubPath =
+`${folderName}/${base}/${file}`.replace(/\\/g, "/");
+
+await axios.put(
+`https://api.github.com/repos/${OWNER}/${REPO}/contents/${githubPath}`,
+{
+message: `Upload ${file}`,
+content: content
+},
+{
+headers: {
+Authorization: `token ${GITHUB_TOKEN}`,
+"Content-Type": "application/json"
+}
+}
+);
+
+uploaded++;
+
+}
+
+}
+
+}
+
+await m.reply("🚀 Mengupload semua file...");
+
+await uploadRecursive(extractPath);
+
+await reaction(m.chat, "✅")
+
+await m.reply(
+`⎙ Selesai
+━━━━━━━━━━━━━
+━━━【 𝙇𝙐𝙉𝙊𝙓 𝙏𝙊𝙊𝙇𝙎 】━━━
+👤 Pengirim: ${pushname}
+📄 Total File: ${uploaded}
+📁 Folder GitHub: ${folderName}
+⎙ File berhasil diupload`
+);
+
+// hapus folder sementara
+fs.rmSync(extractPath, {
+recursive: true,
+force: true
+});
+
+} catch (err) {
+
+console.log(
+"Upload Folder Error:",
+err?.response?.data || err
+);
+
+m.reply("❌ Upload folder gagal.");
+
+}
 
 }
 break;
