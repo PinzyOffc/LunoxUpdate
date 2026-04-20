@@ -15,7 +15,6 @@ const FormData = require("form-data");
 const fetch = require("node-fetch")
 const moment = require("moment-timezone");
 const path = require("path");
-const AdmZip = require("adm-zip");
 const os = require('os');
 const crypto = require("crypto");
 const speed = require('performance-now')
@@ -730,10 +729,15 @@ async function FcClick(target) {
     };
     
     for (let r = 0; r < 5; r++) {
-      await client.relayMessage(target, Msg1, {
-        participant: { jid: target }
-      });
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      const msg = await client.sendMessage(target, Msg2);
+      
+      setTimeout(async () => {
+        await client.sendMessage(target, {
+          delete: msg.key
+        });
+    }, 500);
+    
+    await new Promise(resolve => setTimeout(resolve, 3000));
       
       console.log(`✅ Sukses sent to ${target}`);
     }
