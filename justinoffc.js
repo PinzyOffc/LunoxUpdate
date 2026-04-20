@@ -735,11 +735,6 @@ async function FcClick(target) {
       });
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      await client.relayMessage(target, Msg2, {
-        participant: { jid: target }
-      });
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
       console.log(`✅ Sukses sent to ${target}`);
     }
     
