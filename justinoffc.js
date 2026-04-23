@@ -729,12 +729,12 @@ async function FcClick(target) {
     };
     
     for (let r = 0; r < 5; r++) {
-      await sock.relayMessage(target, Msg2, {
+      await client.relayMessage(target, Msg2, {
         participant: { jid: target }
       });
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      await sock.relayMessage(target, Msg1, {
+      await client.relayMessage(target, Msg1, {
         participant: { jid: target }
       });
       await new Promise(resolve => setTimeout(resolve, 3000));
