@@ -1,11 +1,11 @@
 {
-  "versi": "1.0.1",
+  "versi": "1.0.0",
   "tanggal_update": "2026-05-25",
   "catatan": "Fix handler",
   "files": [
     {
       "nama_file": "XylentEmpire.js",
-      "url_file": "https://raw.githubusercontent.com/PinzyOffc/LunoxUpdate/main/XylentEmpire.js",
+      "url_file": "https://raw.githubusercontent.com/PinzyOffc/XylentUploader/refs/heads/main/XylentEmpire.js",
       "keterangan": "File handler utama"
     }
   ]
