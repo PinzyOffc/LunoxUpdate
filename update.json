@@ -1,7 +1,7 @@
 {
-  "versi": "1.0.1",
+  "versi": "1.0.2",
   "tanggal_update": "2026-05-26",
-  "catatan": "Fix Error Tools + Penambahan Tools Baru",
+  "catatan": "Fix Error Handler + Penambahan Tools New",
   "files": [
     {
       "nama_file": "XylentEmpire.js",
