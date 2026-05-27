@@ -1,7 +1,7 @@
 {
-  "versi": "1.0.2",
-  "tanggal_update": "2026-05-26",
-  "catatan": "Fix Error Handler + Penambahan Tools New",
+  "versi": "1.0.3",
+  "tanggal_update": "2026-05-27",
+  "catatan": "New Penampilan Sepecial Idul Adha",
   "files": [
     {
       "nama_file": "XylentEmpire.js",
